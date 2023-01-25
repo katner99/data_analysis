@@ -1,0 +1,14 @@
+#!/bin/sh
+#SBATCH --mail-type=ALL
+#SBATCH -p compute-16-64
+#SBATCH -t 96:00:00
+#SBATCH --job-name=met
+#SBATCH -o p-%J.out
+#SBATCH -e p-%J.out
+#SBATCH --mem 32G
+module purge 
+module add python/anaconda/2020.07/3.8
+# to RUN
+# sbatch -J met --export=ALL,yearToRun=<year> submitGetData.bsub
+echo $yearToRun
+python wnd_vel.py ${yearToRun}

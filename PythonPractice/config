@@ -1,0 +1,29 @@
+Host *
+ForwardAgent yes
+ForwardX11 yes
+
+Host archer2
+HostName login.archer2.ac.uk
+User kaight
+IdentityFile /home/kaight/.ssh/id_rsa_archer
+
+Host ccrc
+HostName blizzard.ccrc.unsw.edu.au
+User z3478886
+
+Host monsoon
+HostName lander.monsoon-metoffice.co.uk
+User knaughten
+
+Host bas
+HostName bslcenb.nerc-bas.ac.uk
+User kaight
+
+Host tpac
+HostName jumpbox.tpac.org.au
+User kaitlinn
+
+Host jasmin
+HostName login1.jasmin.ac.uk
+User kaight
+IdentityFile /home/kaight/.ssh/id_rsa_jasmin

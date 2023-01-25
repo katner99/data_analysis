@@ -1,0 +1,13 @@
+# build a custom list of non-negative integers specified by the user
+from listsFunctions import makeList, isPrime, primeSequence
+
+def main():
+    col = makeList()
+    print(col)
+
+    """Make a list of prime numbers in range"""
+    primes = list(primeSequence(20, 50))
+    print(primes)
+
+if __name__ == '__main__':
+    main() # run the program
