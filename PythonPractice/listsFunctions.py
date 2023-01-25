@@ -1,0 +1,33 @@
+from math import sqrt
+
+def makeList():
+    """ Builds a list from input provided by the user """
+    result = [] # initialise list
+    inVal = 0
+    while inVal >= 0:
+        inVal = int(input("Enter integer (-1 to quit)"))
+        if inVal >= 0:
+            result += [inVal] # add item to list
+    return result
+
+def isPrime(n):
+    """ Returns True is integer n is prime; otherwise 
+    returns False """
+    if n == 2:                 # 2 is the only even prime number
+        return True
+    if n < 2 or n%2 == 0:
+        return False
+    trialFactor = 3
+    root = sqrt(n)
+    while trialFactor <= root:
+        if n % trialFactor == 0:
+            return False
+        trialFactor += 2
+    return True
+
+def primeSequence(begin, end):
+    """ Generates sequence of prime numbers beginning to end """
+    for value in range(begin, end + 1):
+        if isPrime(value):
+            yield value
+            
