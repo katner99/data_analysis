@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib import animation
+from PIL import Image,ImageFilter
 import numpy as np
 import sys
 import datetime
@@ -43,7 +44,7 @@ def contourplots (lon, lat, data, title, year, exp, var, apply_land_mask=False, 
         data[land_mask == 0] = np.nan
     
     if apply_ice_mask == True:
-        data[ice_mask == 0] = np.nan
+        data[ice_mask < 1] = np.nan
     
     # create a 2D grid
     [X, Y] = np.meshgrid(lon, lat)
@@ -82,8 +83,10 @@ def animate_contour (lon, lat, data, year, exp, var, apply_land_mask=False, appl
     
     # prepare values so all months have the same parameters
     low_val = np.min(data)
+    #low_val = -2
     high_val = np.max(data)
-    step = (high_val-low_val)/10
+    #high_val = 1.5
+    step = (high_val-low_val)/15
     
     # prepares the title
     labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -97,23 +100,23 @@ def animate_contour (lon, lat, data, year, exp, var, apply_land_mask=False, appl
     # animation function
     def animate(i): 
         z = data[i,:,:]
-                
+        
+        if apply_ice_mask == True:
+            z[ice_mask[i,:,:] == 0] = np.nan
         # apply mask over land
         if apply_land_mask == True:
             z[land_mask == 0] = np.nan
-            
-        if apply_ice_mask == True:
-            z[ice_mask[i,:,:] == 1] = np.nan
-            
+              
         # create frame
-        cont = plt.contourf(X, Y, z, np.arange(low_val, high_val,step))
+        cont = plt.contourf(X, Y, z, np.arange(low_val, high_val,step), cmap="coolwarm")
         
         # write colorbar on the first or it will keep being copied to the figure
-        if i==0:
-            plt.colorbar(cont)
+        
         plt.title(var+" "+labels[i]+" "+year)
         return cont  
 
+    plt.colorbar(animate(0))
+    
     # animate
     anim = animation.FuncAnimation(fig, animate, frames=12, interval=20)
 
