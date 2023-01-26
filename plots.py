@@ -6,7 +6,7 @@
 # 23 November 2022
 ###################################################
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
@@ -16,56 +16,109 @@ from mitgcm_python.utils import mask_land_ice
 from mitgcm_python.calculus import over_area
 from mitgcm_python.file_io import read_binary
 
+################## CONTOUR PLOTS ###############################
 
-def contourplots (lon, lat, data, title, year, exp, apply_mask=False, mask=np.nan, save=True):
+# plot contour plot:
+# INPUT:
+# lon, lat = longitude and latitude
+# data = data to be input (requires two dimensions)
+# title = graph title
+# year = year of the contour plot
+# exp = experiment name 
+# var = variable looked at
+# apply_land_mask, land_mask = do you need a land mask? expects a binary file, if not set assumes False and NaN
+# apply_ice_mask, ice_mask = do you need an ice mask? expects a binary file, if not set assumes False and NaN
+# show = shows the contour plot, if unset assumes False
+# save = saves contour plot as a png, assumes True if unset
+
+def contourplots (lon, lat, data, title, year, exp, var, apply_land_mask=False, apply_ice_mask=False, land_mask=np.nan, ice_mask=np.nan, show=Fals, save=True):
 
     x = lon
     y = lat
     z = data
 
-    if apply_mask == True:
-        data[mask == 0] = np.nan
+    # apply mask over land
+    if apply_land_mask == True:
+        data[land_mask == 0] = np.nan
+    
+    if apply_ice_mask == True:
+        data[ice_mask == 0] = np.nan
     
     # create a 2D grid
     [X, Y] = np.meshgrid(lon, lat)
 
+    # set up figure
     fig =  plt.figure(figsize=(15,10))
-
-    # plot contour lines levels=np.linspace(-0.5,0.5,10)
     cs = plt.contourf(X, Y, z, cmap = "ocean")
     plt.colorbar(cs)
-   # ax.set_xlim(xlim)
-   # ax.set_ylim(ylim)
     plt.title(title)
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
-    if save == True:
-        fig.savefig(exp+"_cont_"+year+".png")
-
-def animate_contour (time, lon, lat, data, title, year, exp, apply_mask=False, mask=np.nan, save=True):
-    fig = plt.figure(figsize=(15,10))
     
-    def animate_func(time):
-        ax.clear()  # Clears the figure to update the line, point,   
-                    # title, and axes    # Updating Trajectory Line (num+1 due to Python indexing)
-        x = lon
-        y = lat
-        z = data[time,:,:]
-
-        if apply_mask == True:
-            z[mask == 0] = np.nan
+    # show figure
+    if show == True:
+        plt.show()
         
-        # create a 2D grid
-        [X, Y] = np.meshgrid(lon, lat)
+    # save figure
+    if save == True:
+        fig.savefig(exp+"_cont_"+year+"_"+var+".png")
 
-        # plot contour lines levels=np.linspace(-0.5,0.5,10)
-        ax.contourf(X, Y, z, cmap = "ocean")
-        ax.set_title(title)
-        ax.set_xlabel('Longitude')
-        ax.set_ylabel('Latitude')
-        
-    for i in np.range(time):
-        frame = contourplots(lon, lat, data[i,:,:], title, year, exp, apply_mask, mask, save)
+# creates gif of contourplot:
+# INPUT:
+# lon, lat = longitude and latitude
+# data = data to be input (requires two dimensions), expects monthly data
+# year = year of the contour plot
+# exp = experiment name 
+# var = variable looked at
+# apply_land_mask, land_mask = do you need a land mask? expects a binary file, if not set assumes False and NaN
+# apply_ice_mask, ice_mask = do you need an ice mask? expects a binary file, if not set assumes False and NaN
+# show = shows the contour plot, if unset assumes False
+# save = saves contour plot as a png, assumes True if unset
+
+def animate_contour (lon, lat, data, year, exp, var, apply_land_mask=False, apply_ice_mask=False, land_mask=np.nan, ice_mask=np.nan, show=False, save=True):
+    # prepare grid
+    [X, Y] = np.meshgrid(lon, lat)
+    
+    # prepare values so all months have the same parameters
+    low_val = np.min(data)
+    high_val = np.max(data)
+    step = (high_val-low_val)/10
+    
+    # prepares the title
+    labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    
+    # First set up the figure, the axis, and the plot element we want to animate
+    fig = plt.figure(figsize=(10,8))
+    ax = plt.axes(xlim=(min(lon), max(lon)), ylim=(min(lat), max(lat)))
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+    
+    # animation function
+    def animate(i): 
+        z = temp[i,:,:]
+            # write colorbar on the first or it will keep being copied to the figure
+            if i==0:
+                plt.colorbar(cont)
+                
+            # apply mask over land
+            if apply_land_mask == True:
+                data[land_mask == 0] = np.nan
+            
+            if apply_ice_mask == True:
+                data[ice_mask == 0] = np.nan
+        # create frame
+        cont = plt.contourf(X, Y, z, np.arange(low_val, high_val,step))
+        plt.title(variable+" "+labels[i]+" "+year)
+        return cont  
+
+    # animate
+    anim = animation.FuncAnimation(fig, animate, frames=12, interval=20)
+
+    if show == True:
+        plt.show()
+    
+    if save == True:
+        anim.save(exp+"_cont_"+var+"_"+year+".gif")
         
     
     
