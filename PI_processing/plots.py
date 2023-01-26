@@ -84,7 +84,7 @@ def animate_contour (lon, lat, data, year, exp, var, apply_land_mask=False, appl
     # prepare values so all months have the same parameters
     low_val = np.min(data)
     #low_val = -2
-    high_val = np.max(data)
+    high_val = np.max(data)+0.25
     #high_val = 1.5
     step = (high_val-low_val)/15
     
@@ -92,7 +92,7 @@ def animate_contour (lon, lat, data, year, exp, var, apply_land_mask=False, appl
     labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     
     # First set up the figure, the axis, and the plot element we want to animate
-    fig = plt.figure(figsize=(10,8))
+    fig = plt.figure(figsize=(8,6))
     ax = plt.axes(xlim=(min(lon), max(lon)), ylim=(min(lat), max(lat)))
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
