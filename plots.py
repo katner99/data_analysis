@@ -96,16 +96,15 @@ def animate_contour (lon, lat, data, year, exp, var, apply_land_mask=False, appl
     # animation function
     def animate(i): 
         z = temp[i,:,:]
-            # write colorbar on the first or it will keep being copied to the figure
-            if i==0:
-                plt.colorbar(cont)
-                
-            # apply mask over land
-            if apply_land_mask == True:
-                data[land_mask == 0] = np.nan
+        # write colorbar on the first or it will keep being copied to the figure
+        if i == 0: plt.colorbar(cont)
             
-            if apply_ice_mask == True:
-                data[ice_mask == 0] = np.nan
+        # apply mask over land
+        if apply_land_mask == True:
+            data[land_mask == 0] = np.nan
+         
+        if apply_ice_mask == True:
+            data[ice_mask == 1] = np.nan
         # create frame
         cont = plt.contourf(X, Y, z, np.arange(low_val, high_val,step))
         plt.title(variable+" "+labels[i]+" "+year)
