@@ -1,10 +1,8 @@
-###################################################
-# script to produce controur plots to compare data
-# between two datasets
-# created by Katherine Turner based on hovmoller.py
-# script 
+###############################################################
+# script to produce plots to compare data between two datasets
+# created by Katherine Turner based on hovmoller.py script 
 # 23 November 2022
-###################################################
+###############################################################
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -14,11 +12,23 @@ import numpy as np
 import sys
 import datetime
 import netCDF4 as nc
-#from mitgcm_python.utils import mask_land_ice
-#from mitgcm_python.calculus import over_area
-#from mitgcm_python.file_io import read_binary
+from mitgcm_python.utils import mask_land_ice
+from mitgcm_python.calculus import over_area
+from mitgcm_python.file_io import read_binary
 
-################## CONTOUR PLOTS ###############################
+################## AVAILABLE PLOTS #############################
+# CONTOUR PLOTS:
+# contourplots: plots a simple 2D plot
+# animate_contour: animates contour plot
+#
+# TIMESERIES:
+# make_timeseries_at_point: timesereis at a single point
+# make timeseries over area: calculates the average over the area and pots as a timeseries
+#
+# OTHER FUNCTIONS:
+# find_nearest: finds the index with the value closest to the one wanted
+
+################## CONTOUR PLOTS ################################
 
 # plot contour plot:
 # INPUT:
@@ -127,7 +137,15 @@ def animate_contour (lon, lat, data, year, exp, var, apply_land_mask=False, appl
         anim.save(exp+"_cont_"+var+"_"+year+".gif")
         
     
-    
+######################### TIMESERIES #########################
+
+# creates timeseries at point:
+# INPUT:
+# time = time variable, exoects monthly resolution
+# data = data to be input (requires two dimensions), expects monthly data
+# title = graph title
+# year = year of the contour plot
+# var = variable looked at
 def make_timeseries_at_point (time, data, title, var, units, year):
 
     fig =  plt.figure(figsize=(12,10))
@@ -143,7 +161,15 @@ def make_timeseries_at_point (time, data, title, var, units, year):
 
     fig.savefig("temp"+year+".png")
 
-
+# plot timeseries over the area:
+# INPUT:
+# time = time
+# data = data to be input (requires two dimensions)
+# title = graph title
+# year = year of the contour plot
+# var = variable looked at
+# units = unit of the variable
+# apply_mask,mask = do you need a land mask? expects a binary file, if not set assumes False and NaN
 def make_timeseries_over_area (time, data, title, year, var, units, apply_mask=False, mask=np.nan):
     timeseries = []
 
@@ -171,6 +197,13 @@ def make_timeseries_over_area (time, data, title, year, var, units, apply_mask=F
     
     fig.savefig("timeseries_"+var+"_"+year+".png")
 
+###################### OTHER FUNCTIONS ######################
+# Fins the nearest value to a point
+# INPUT:
+# array = array you want to look through
+# value = value you want to find
+# OUTPUT:
+# idx = returns the index with the closest value to the one chosen
 def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
