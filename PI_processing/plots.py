@@ -82,21 +82,25 @@ def contourplots (lon, lat, data, title, year, exp, var, apply_land_mask=False, 
 # year = year of the contour plot
 # exp = experiment name 
 # var = variable looked at
+# cs = set color scheme
 # apply_land_mask, land_mask = do you need a land mask? expects a binary file, if not set assumes False and NaN
 # apply_ice_mask, ice_mask = do you need an ice mask? expects a binary file, if not set assumes False and NaN
 # show = shows the contour plot, if unset assumes False
 # save = saves contour plot as a png, assumes True if unset
 
-def animate_contour (lon, lat, data, year, exp, var, apply_land_mask=False, apply_ice_mask=False, land_mask=np.nan, ice_mask=np.nan, show=False, save=True):
+def animate_contour (lon, lat, data, year, exp, var, cs, apply_land_mask=False, apply_ice_mask=False, land_mask=np.nan, ice_mask=np.nan, show=False, save=True):
     # prepare grid
     [X, Y] = np.meshgrid(lon, lat)
     
     # prepare values so all months have the same parameters
-    low_val = np.min(data)
+    low_val = np.nanmin(data)
+    print(low_val)
     #low_val = -2
-    high_val = np.max(data)+0.25
-    #high_val = 1.5
+    #high_val = np.nanmax(data)
+    #print(high_val)
+    high_val = 0.002
     step = (high_val-low_val)/15
+    print(step)
     
     # prepares the title
     labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -118,7 +122,8 @@ def animate_contour (lon, lat, data, year, exp, var, apply_land_mask=False, appl
             z[land_mask == 0] = np.nan
               
         # create frame
-        cont = plt.contourf(X, Y, z, np.arange(low_val, high_val,step), cmap="coolwarm")
+        cont = plt.contourf(X, Y, z, np.arange(low_val, high_val, step), cmap=cs)
+        #cont = plt.contourf(X, Y, z, cmap=cs)
         
         # write colorbar on the first or it will keep being copied to the figure
         
@@ -128,13 +133,13 @@ def animate_contour (lon, lat, data, year, exp, var, apply_land_mask=False, appl
     plt.colorbar(animate(0))
     
     # animate
-    anim = animation.FuncAnimation(fig, animate, frames=12, interval=20)
+    anim = animation.FuncAnimation(fig, animate, frames=12, interval = 200)
 
     if show == True:
         plt.show()
     
     if save == True:
-        anim.save(exp+"_cont_"+var+"_"+year+".gif")
+        anim.save(exp+"_cont_"+var+"_"+year+".gif", fps = 2)
         
     
 ######################### TIMESERIES #########################
