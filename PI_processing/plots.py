@@ -20,6 +20,7 @@ from mitgcm_python.file_io import read_binary
 # CONTOUR PLOTS:
 # contourplots: plots a simple 2D plot
 # animate_contour: animates contour plot
+# compare_contour_plots: compares multiple plots for one variable
 #
 # TIMESERIES:
 # make_timeseries_at_point: timesereis at a single point
@@ -46,7 +47,7 @@ from mitgcm_python.file_io import read_binary
 # show = shows the contour plot, if unset assumes False
 # save = saves contour plot as a png, assumes True if unset
 
-def contourplots (lon, lat, data, title, year, exp, var, apply_land_mask=False, apply_ice_mask=False, land_mask=np.nan, ice_mask=np.nan, show=False, save=True):
+def contour_plots (lon, lat, data, title, year, exp, var, apply_land_mask=False, apply_ice_mask=False, land_mask=np.nan, ice_mask=np.nan, show=False, save=True):
 
     x = lon
     y = lat
@@ -144,6 +145,18 @@ def animate_contour (lon, lat, data, year, exp, var, cs, apply_land_mask=False, 
     if save == True:
         anim.save(exp+"_cont_"+var+"_"+year+".gif", fps = 2)
 
+# givent two datasets compares the values of one variable
+# INPUT:
+# lon, lat = longitude and latitude
+# data1, data2 = data to be input (requires two dimensions)
+# month = month you are looking at
+# apply_mask, mask = do you need a land mask? expects a binary file, if not set assumes False and NaN
+# title1, title2 = titles ove the data you are looking at
+# year = year of the contour plot
+# var = variable looked at
+# cm = set color scheme
+# show = shows the contour plot, if unset assumes False
+# save = saves contour plot as a png, assumes True if unset
 def compare_contour_plots (lon, lat, data1, data2, month, apply_mask = False, mask = None, title1 = None, title2 = None, var = None, year = None, cm = "ocean", save = True, show = False):
 
     x = lon
@@ -191,7 +204,112 @@ def compare_contour_plots (lon, lat, data1, data2, month, apply_mask = False, ma
         file_out = "PI_ctrl_comp_cont_"+year+"_"+m+"_"+var+".png"
         fig.savefig(file_out)
         
+
+# givent two datasets compares the values of three variables
+# INPUT:
+# lon, lat = longitude and latitude
+# data1, data2 = data to be input (requires two dimensions)
+# month = month you are looking at
+# apply_mask, mask = do you need a land mask? expects a binary file, if not set assumes False and NaN
+# title1, title2 = titles ove the data you are looking at
+# year = year of the contour plot
+# var = variable looked at
+# cm = set color scheme
+# show = shows the contour plot, if unset assumes False
+# save = saves contour plot as a png, assumes True if unset
+def compare_contour_plots_TSM (lon, lat, temp1, temp2, salt1, salt2, melt1, melt2, month, ens1, ens2, apply_mask = False, mask = None, year = None, save = False, show = True):
+
+    x = lon
+    y = lat
+    m = str(month)
+
+    if apply_mask == True:
+        temp1[mask == 0] = np.nan
+        temp2[mask == 0] = np.nan
+        salt1[mask == 0] = np.nan
+        salt2[mask == 0] = np.nan
+        melt1[mask == 0] = np.nan
+        melt2[mask == 0] = np.nan
     
+    print(np.shape(melt1))
+    # create a 2D grid
+    [X, Y] = np.meshgrid(lon, lat)
+
+    fig =  plt.figure(figsize=(18,12))
+
+    plt.subplot(3,3,1) 
+    cs = plt.contourf(X, Y, temp1, levels=np.linspace(np.nanmin(temp1),np.nanmax(temp1),10), cmap = "coolwarm")
+    plt.colorbar(cs)
+    plt.title(ens1+" Theta")
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    plt.subplot(3,3,2) 
+    cs = plt.contourf(X, Y, temp2, levels=np.linspace(np.nanmin(temp1),np.nanmax(temp1),10), cmap = "coolwarm")
+    plt.colorbar(cs)
+    plt.title(ens2+" Theta")
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    plt.subplot(3,3,3) 
+    cs = plt.contourf(X, Y, temp1-temp2, cmap = "coolwarm")
+    plt.colorbar(cs)
+    plt.title("Anomaly")
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    plt.subplot(3,3,4) 
+    cs = plt.contourf(X, Y, salt1, levels=np.linspace(np.nanmin(salt1),np.nanmax(salt1),10), cmap = "PRGn_r")
+    plt.colorbar(cs)
+    plt.title(ens1+" Salinity")
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    plt.subplot(3,3,5) 
+    cs = plt.contourf(X, Y, salt2, levels=np.linspace(np.nanmin(salt1),np.nanmax(salt1),10), cmap = "PRGn_r")
+    plt.colorbar(cs)
+    plt.title(ens2+" Salinity")
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    plt.subplot(3,3,6) 
+    cs = plt.contourf(X, Y, salt1-salt2, cmap = "PRGn_r")
+    plt.colorbar(cs)
+    plt.title("Anomaly")
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    plt.subplot(3,3,7) 
+    cs = plt.contourf(X, Y, melt1, levels=np.linspace(0,0.002,10), cmap = "Blues_r")
+    plt.colorbar(cs)
+    plt.title(ens1+" Melt")
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    plt.subplot(3,3,8) 
+    cs = plt.contourf(X, Y, melt2, levels=np.linspace(0,0.002,10), cmap = "Blues_r")
+    plt.colorbar(cs)
+    plt.title(ens2+" Melt")
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    plt.subplot(3,3,9) 
+    cs = plt.contourf(X, Y, melt1-melt2, cmap = "Blues_r")
+    plt.colorbar(cs)
+    plt.title("Anomaly")
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+   
+    fig.tight_layout(pad=2.0)
+
+    # show figure
+    if show == True:
+        plt.show()
+        
+    # save figure
+    if save == True:
+        file_out = "PI_ctrl_comp_cont_"+year+"_"+m+"_TSM.png"
+        fig.savefig(file_out)
 ######################### TIMESERIES #########################
 
 # creates timeseries at point:
@@ -251,6 +369,65 @@ def make_timeseries_over_area (time, data, title, year, var, units, apply_mask=F
     plt.ylabel(var+" "+units)
     
     fig.savefig("timeseries_"+var+"_"+year+".png")
+
+# plots timeresies over multitude of years
+# INPUT:
+# filepath = initial path to file
+# filename = netcdf file to read
+# start_year = year to start from (expects string)
+# n_years = how many years to run through
+# var = what variable do you want to look at
+# OUTPUT:
+# y = array with the timeseries data
+# ttimeseries_years = the years the timeseries runs through
+# show = shows the contour plot, if unset assumes False
+# save = saves contour plot as a png, assumes True if unset
+def make_interannual_timeseries (filepath, filename, start_year, n_years, var, show = True, save = False):
+    # set up the data
+    input_data = filepath+str(start_year)+"01/MITgcm/"
+    id = nc.Dataset(input_data+filename, 'r')
+    time = id.variables["time"][:]
+    lat = id.variables["YC"][:]
+    lon = id.variables["XC"][:]
+    mask = id.variables["maskC"][1,:,:]
+    
+    # run through the years
+    timeseries = []
+    timeseries_years = []
+    for i in range(n_years):
+        fileyear=str(start_year+i)
+        timeseries_years.append(fileyear)
+        input_data = filepath+fileyear+"01/MITgcm/"
+        id = nc.Dataset(input_data+filename, 'r')
+        data = id.variables[var][:,1,:,:]
+        for t in range(len(time)):
+            temporary = data[t,:,:]
+            temporary[mask == 0] = np.nan
+            data[t,:,:] = temporary
+    
+        for t in range(data.shape[0]):
+            timeseries.append(np.nanmean(data[t,:]))
+    
+    #plot the data
+    x = range(len(timeseries))
+    y = np.array(timeseries) 
+
+    fig =  plt.figure(figsize=(10,5))
+
+    plt.plot(x, y, color='red', linewidth = 2)
+    plt.xticks(np.arange(min(x),max(x), step=12), timeseries_years, rotation=45)
+    plt.ylabel(var,fontsize=20)
+
+    # show figure
+    if show == True:
+        plt.show()
+        
+    # save figure
+    if save == True:
+        file_out = "PI_ctrl_time_"+str(n_years)+"_years_"+var+".png"
+        fig.savefig(file_out)
+
+    return y, timeseries_years
 
 ######################## QUIVER PLOTS ##########################
 #Plot vector fields on graph:
