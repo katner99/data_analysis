@@ -25,6 +25,9 @@ from mitgcm_python.file_io import read_binary
 # make_timeseries_at_point: timesereis at a single point
 # make timeseries over area: calculates the average over the area and pots as a timeseries
 #
+# OTHER PLOTS:
+# quiver_plot: maps vector fields with or without overlay
+#
 # OTHER FUNCTIONS:
 # find_nearest: finds the index with the value closest to the one wanted
 
@@ -140,6 +143,53 @@ def animate_contour (lon, lat, data, year, exp, var, cs, apply_land_mask=False, 
     
     if save == True:
         anim.save(exp+"_cont_"+var+"_"+year+".gif", fps = 2)
+
+def compare_contour_plots (lon, lat, data1, data2, month, apply_mask = False, mask = None, title1 = None, title2 = None, var = None, year = None, cm = "ocean", save = True, show = False):
+
+    x = lon
+    y = lat
+    z1 = data1
+    z2 = data2
+    m = str(month)
+
+    if apply_mask == True:
+        z1[mask == 0] = np.nan
+        z2[mask == 0] = np.nan
+    
+    # create a 2D grid
+    [X, Y] = np.meshgrid(lon, lat)
+
+    fig =  plt.figure(figsize=(17,5))
+
+    plt.subplot(1,3,1) 
+    cs = plt.contourf(X, Y, z1, cmap = cm)
+    plt.colorbar(cs)
+    plt.title(title1)
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    plt.subplot(1,3,2) 
+    cs = plt.contourf(X, Y, z2, cmap = cm)
+    plt.colorbar(cs)
+    plt.title(title2)
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    plt.subplot(1,3,3) 
+    cs = plt.contourf(X, Y, z1-z2, cmap = cm)
+    plt.colorbar(cs)
+    plt.title(title1+" - "+title2)
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+
+    # show figure
+    if show == True:
+        plt.show()
+        
+    # save figure
+    if save == True:
+        file_out = "PI_ctrl_comp_cont_"+year+"_"+m+"_"+var+".png"
+        fig.savefig(file_out)
         
     
 ######################### TIMESERIES #########################
@@ -202,6 +252,45 @@ def make_timeseries_over_area (time, data, title, year, var, units, apply_mask=F
     
     fig.savefig("timeseries_"+var+"_"+year+".png")
 
+######################## QUIVER PLOTS ##########################
+#Plot vector fields on graph:
+# INPUT:
+# u, v = velocity vectors to be plotted
+# lon, lat = associated longitude an latitude coordinates
+# title = title of the plot
+# exp = experiment name 
+# var = variable looked at
+# year = year of the contour plot
+# overlay = do you want your quiver to be over another contour plot, set to False by default
+# data = data to overlay
+# x, y = coordinates associated with the data to overlay
+# show = shows the contour plot, if unset assumes False
+# save = saves contour plot as a png, assumes True if unset
+def quiver_plot (u, v, lon, lat, title, exp, var, year, overlay = False, data = None, x = None, y = None, show = False, save = True):
+    [LON,LAT] = np.meshgrid(lon, lat)
+
+    fig, ax = plt.subplots()
+    
+    if overlay == True:
+        [X,Y] = np.meshgrid(x, y)
+        cp = plt.contourf(X, Y, data, cmap="coolwarm")
+        cb = plt.colorbar(cp)
+        quiv = plt.quiver(LON, LAT, u, v, color = "white")
+        plt.title(title)
+        plt.xlabel("Longitude")
+        plt.ylabel("Latitude")
+    else:
+        plt.quiver(LON, LAT, u, v)
+        plt.title(title)
+        plt.xlabel("Longitude")
+        plt.ylabel("Latitude")
+        
+    if show == True:
+        plt.show()
+    
+    if save == True:
+        fig.save(exp+"_quiv_"+var+"_"+year+".pgn")
+
 ###################### OTHER FUNCTIONS ######################
 # Fins the nearest value to a point
 # INPUT:
@@ -215,36 +304,7 @@ def find_nearest(array, value):
     return idx
 
 
-def compare_contour_plots (lon, lat, data1, data2, title, var, year):
 
-    x = lon
-    y = lat
-    z1 = data1
-    z2 = data2
-
-    # create a 2D grid
-    [X, Y] = np.meshgrid(lon, lat)
-
-    fig =  plt.figure(figsize=(8,5))
-
-    # plot contour lines levels=np.linspace(-0.5,0.5,10)
-    #plt.subplot(1,2,1) 
-    cs = plt.contourf(X, Y, z1-z2, cmap = "BrBG")
-    plt.colorbar(cs)
-    #ax.set_ylim(-1100,0)
-    plt.title(title1)
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
-
-    #plt.subplot(1,2,2) 
-    #cs = plt.contourf(X, Y, z2, cmap = "BrBG")
-    #plt.colorbar(cs)
-    #ax.set_ylim(-1100,0)
-    #plt.title("1850")
-    #plt.xlabel('Longitude')
-    #plt.ylabel('Latitude')
-
-    fig.savefig("compare_cont_"+var+"_"+year+".png")
 
 def compare_timeseries_at_point (time, data1, data2, data3, data4, title1, title2, year):
 
