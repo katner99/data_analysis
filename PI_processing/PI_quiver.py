@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from mitgcm_python.plot_latlon import plot_vel
+from plots import interpolate_currents
 
 def main():
     year = str(sys.argv[1])
@@ -43,8 +44,8 @@ def main():
 
     if var == "currents":
         # load up the current speeds
-        U = id.variables["UVEL"][0,:,:,:] # [time, Z, YC, XG]
-        V = id.variables["VVEL"][0,:,:,:] # [time, Z, YG, XC]
+        U = id.variables["UVEL"][0,0,:,:] # [time, Z, YC, XG]
+        V = id.variables["VVEL"][0,0,:,:] # [time, Z, YG, XC]
         # load up the grid
         lat = id.variables["YC"][:]
         lon = id.variables["XC"][:]
@@ -52,11 +53,34 @@ def main():
         # load up the corresponding masks
         umask = id.variables["hFacW"] # [Z, YC, XG]
         vmask = id.variables["hFacS"] # [Z, YG, XC]
+        land_mask = id.variables["maskC"][1,:,:]
         # apply the mask
         U[umask == 1] = np.nan
         V[vmask == 1] = np.nan
         # plot using Kaitlin's code
-        plot_vel(U, V, [LON, LAT], vel_option="bottom")
+        [new_u, new_v] = interpolate_currents(U, V)
+
+        temp = id.variables["THETA"][0,11:21,:,:]
+        temp_d = np.mean(temp, axis=0)
+    
+        time = id.variables["time"][:]
+        lat = id.variables["YC"][:]
+        lon = id.variables["XC"][:]
+
+        temp_d[land_mask == 0] = np.nan
+        title = "Test"
+        fig, ax = plt.subplots()
+        
+        u = new_u[0:-1:20,0:-1:20]
+        v = new_v[0:-1:20,0:-1:20]
+        x = lon[0:-1:20]
+        y = lat[0:-1:20]
+        [X,Y]= np.meshgrid(x,y)
+        #cp = plt.contourf(LON, LAT, temp_d, cmap="coolwarm")
+        #cb = plt.colorbar(cp)
+        quiv = plt.quiver(X, Y, u, v, color = "red")
+
+        plt.show()
 
 if __name__ == '__main__':
     main() # run the program
