@@ -39,19 +39,19 @@ from mitgcm_python.file_io import read_binary
 
 # CONTOUR PLOT:
 # INPUT:
-# lon, lat = longitude and latitude
-# data     = data to be input (expects two dimensions)
-# var      = variable name
-# title    = graph title, if unset assumes None
-# year     = year represented, if unset assumes None - NB needed to save
-# cm       = colorscheme used, if unset assumes "ocean"
+# lon, lat  = longitude and latitude
+# data      = data to be input (expects two dimensions)
+# var       = variable name
+# depth     = depth
+# ice_mask  = ocean mask, where there are wet cells
+# font_size = font desired, if unset assumes 20
+# year      = year represented, if unset assumes None - NB needed to save
+# cm        = colorscheme used, if unset assumes "ocean"
 # low_val, high_val = max and min values for the colorbar, if unset assumes None
-# apply_land_mask, land_mask = do you need a land mask? If unset assumes False and sets the mask to None
-# apply_ice_mask, ice_mask   = do you need an ice mask? If unset assumes False and sets the mask to None
 # show     = shows the contour plot, if unset assumes False
 # save     = saves contour plot as a png, if unset assumes True
 
-def contour_plots (lon, lat, data, var, title = None, year = None, cm = "ocean", low_val = None, high_val = None, apply_land_mask=False, apply_ice_mask=False, land_mask=None, ice_mask=None, show=False, save=True):
+def contour_plots (lon, lat, data, var, depth, ice_mask, font_size = 20, year = None, cm = "ocean", low_val = None, high_val = None, show=False, save=True):
 
     x = lon
     y = lat
@@ -60,28 +60,36 @@ def contour_plots (lon, lat, data, var, title = None, year = None, cm = "ocean",
     # prepare values so all months have the same parameters
     if low_val == None:
         low_val = np.nanmin(data)
-    if high val == None:
-        high_val = np.nanmax(data)
-    step = (high_val-low_val)/15
+    if high_val == None:
+        high_val = np.nanmax(data)    
     
-    # apply mask over land
-    if apply_land_mask == True:
-        data[land_mask == 0] = np.nan
+    # apply mask over land, i.e. where ocean depth is zero
+    land_mask = np.zeros(np.shape(depth))
+    land_mask[depth == 0] = 1
+
+    # apply mask over the ice shelf (determiend by the ice-mask) and the continental shelf (roughly where the depth is less than 1500m)
+    mask = np.zeros(np.shape(depth))
+    mask[depth < 1500] = 1
+    mask[ice_mask == 0] = 2
     
-    # apply mask over ice
-    if apply_ice_mask == True:
-        data[ice_mask < 1] = np.nan
+    # set the colors to block the continent (set to grey)
+    colors = [
+        (1.0, 1.0, 1.0, 0),
+        (0.7, 0.7, 0.7, 1),
+        (0.6, 0.6, 0.6, 1)]
     
     # create a 2D grid
     [X, Y] = np.meshgrid(lon, lat)
 
     # set up figure
-    fig =  plt.figure(figsize=(15,10))
-    cs = plt.contourf(X, Y, z, np.arange(low_val, high_val, step), cmap = cm)
+    fig = plt.figure(figsize=(15,10))
+    cs = plt.contourf(X, Y, z, levels=np.linspace(low_val, high_val,15), cmap = cm)
+    plt.contourf(X, Y, land_mask, cmap = matplotlib.colors.ListedColormap(colors))
+    plt.contour(X, Y, mask, 2, cmap = "Greys",linestyles='dashed')
     plt.colorbar(cs)
-    plt.title(title)
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
+    plt.title(var+" "+year, fontsize = font_size)
+    plt.xlabel('Longitude', fontsize = font_size)
+    plt.ylabel('Latitude', fontsize = font_size)
     
     # save figure
     if save == True:
@@ -114,7 +122,7 @@ def animate_contour (lon, lat, data, year, var, cm = "ocean", low_val = None, hi
     # prepare values so all months have the same parameters
     if low_val == None:
         low_val = np.nanmin(data)
-    if high val == None:
+    if high_val == None:
         high_val = np.nanmax(data)
     step = (high_val-low_val)/15
     
@@ -577,6 +585,14 @@ def find_nearest(array, value):
     idx = (np.abs(array - value)).argmin()
     return idx
 
+def interpolate_currents(u, v):
+    u_interp = np.empty(np.shape(u))
+    v_interp = np.empty(np.shape(v))
+    u_interp[...,:-1] = 0.5*(u[...,:-1] + u[...,1:])
+    u_interp[...,-1] = u[...,-1]
+    v_interp[...,:-1,:] = 0.5*(v[...,:-1,:] + v[...,1:,:])
+    v_interp[...,-1,:] = v[...,-1,:]
+    return u_interp, v_interp
 
 if __name__ == "__main__":
     print("ERROR!! This is a file containing functions and cannot be run independently")
