@@ -12,8 +12,9 @@ def main():
     exp = "PIctrl"
 
     # read in the data from two different ensembles
-    filepath_ens07 = "/data/oceans_output/shelf/katner33/PIctrl_output/PAS_ctrl07/output/"+year+"01/MITgcm/"
-    filepath_ens08 = "/data/oceans_output/shelf/katner33/PIctrl_output/PAS_ctrl08/output/"+year+"01/MITgcm/"
+    filepath_ens08 = "/data/oceans_output/shelf/katner33/PIctrl_output/PAS_ctrl07/output/"+year+"01/MITgcm/"
+    #filepath_ens08 = "/data/oceans_output/shelf/katner33/PIctrl_output/PAS_ctrl08/output/"+year+"01/MITgcm/"
+    filepath_ens07 = "/data/oceans_output/shelf/kaight/archer2_mitgcm/PAS_LENS001_O/output/192001/MITgcm/"
     filename = "output.nc"
     id07 = nc.Dataset(filepath_ens07+filename, 'r')
     id08 = nc.Dataset(filepath_ens08+filename, 'r')
@@ -22,7 +23,8 @@ def main():
     time = id07.variables["time"][:]
     lat = id07.variables["YC"][:]
     lon = id07.variables["XC"][:]
-    land_mask = id07.variables["maskC"][1,:,:]
+    ice_mask = id07.variables["maskC"][1,:,:]
+    depth = id07.variables["Depth"][:,:]
 
     # read in the variables chosen and set the associated color schemes
     if var == "THETA":
@@ -59,7 +61,7 @@ def main():
         # melt
         melt_07 = id07.variables["SIfwmelt"][month,:,:]
         melt_08 = id08.variables["SIfwmelt"][month,:,:]
-        compare_contour_plots_TSM(lon, lat, temp_07, temp_08, salt_07, salt_08, melt_07, melt_08, month, ens1 = "ens_07", ens2 = "ens_08", apply_mask = True, mask = land_mask, year = year, save = True, show = False)
+        compare_contour_plots_TSM("PIctrlVSLENS",lon, lat, temp_07, temp_08, salt_07, salt_08, melt_07, melt_08, month, ens1 = "LENS", ens2 = "PIctrl", depth = depth, ice_mask = ice_mask, year = "1920", save = True, show = True)
     
 if __name__ == '__main__':
     main() # run the program

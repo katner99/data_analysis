@@ -227,22 +227,27 @@ def compare_contour_plots (lon, lat, data1, data2, month, apply_mask = False, ma
 # year         = year represented, if unset assumes None
 # show         = shows the contour plot, if unset assumes False
 # save         = saves contour plot as a png, if unset assumes True
-def compare_contour_plots_TSM (lon, lat, temp1, temp2, salt1, salt2, melt1, melt2, month, ens1, ens2, apply_mask = False, mask = None, year = None, save = False, show = True):
+def compare_contour_plots_TSM (exp, lon, lat, temp1, temp2, salt1, salt2, melt1, melt2, month, ens1, ens2, depth, ice_mask, font_size = 12, year = None, save = False, show = True):
 
     x = lon
     y = lat
     m = str(month)
 
-    if apply_mask == True:
-        temp1[mask == 0] = np.nan
-        temp2[mask == 0] = np.nan
-        salt1[mask == 0] = np.nan
-        salt2[mask == 0] = np.nan
-        melt1[mask == 0] = np.nan
-        melt2[mask == 0] = np.nan
+    # apply mask over land, i.e. where ocean depth is zero
+    land_mask = np.zeros(np.shape(depth))
+    land_mask[depth == 0] = 1
+
+    # apply mask over the ice shelf (determiend by the ice-mask) and the continental shelf (roughly where the depth is less than 1500m)
+    mask = np.zeros(np.shape(depth))
+    mask[depth < 1500] = 1
+    mask[ice_mask == 0] = 2
     
-    print(np.shape(melt1))
-    # create a 2D grid
+    # set the colors to block the continent (set to grey)
+    colors = [
+        (1.0, 1.0, 1.0, 0),
+        (0.7, 0.7, 0.7, 1),
+        (0.6, 0.6, 0.6, 1)]
+    
     [X, Y] = np.meshgrid(lon, lat)
 
     fig =  plt.figure(figsize=(18,12))
@@ -251,74 +256,92 @@ def compare_contour_plots_TSM (lon, lat, temp1, temp2, salt1, salt2, melt1, melt
     # TEMPERATURE
     plt.subplot(3,3,1) 
     cs = plt.contourf(X, Y, temp1, levels=np.linspace(np.nanmin(temp1),np.nanmax(temp1),10), cmap = "coolwarm")
+    plt.contourf(X, Y, land_mask, cmap = matplotlib.colors.ListedColormap(colors))
+    plt.contour(X, Y, mask, 2, cmap = "Greys",linestyles='dashed')
     plt.colorbar(cs)
-    plt.title(ens1+" Theta")
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
+    plt.title(ens1+" Theta", fontsize = font_size)
+    plt.xlabel('Longitude', fontsize = font_size)
+    plt.ylabel('Latitude', fontsize = font_size)
 
     plt.subplot(3,3,2) 
     cs = plt.contourf(X, Y, temp2, levels=np.linspace(np.nanmin(temp1),np.nanmax(temp1),10), cmap = "coolwarm")
+    plt.contourf(X, Y, land_mask, cmap = matplotlib.colors.ListedColormap(colors))
+    plt.contour(X, Y, mask, 2, cmap = "Greys",linestyles='dashed')
     plt.colorbar(cs)
-    plt.title(ens2+" Theta")
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
+    plt.title(ens2+" Theta", fontsize = font_size)
+    plt.xlabel('Longitude', fontsize = font_size)
+    plt.ylabel('Latitude', fontsize = font_size)
 
     plt.subplot(3,3,3) 
     cs = plt.contourf(X, Y, temp1-temp2, cmap = "coolwarm")
+    plt.contourf(X, Y, land_mask, cmap = matplotlib.colors.ListedColormap(colors))
+    plt.contour(X, Y, mask, 2, cmap = "Greys",linestyles='dashed')
     plt.colorbar(cs)
-    plt.title("Anomaly")
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
+    plt.title("Anomaly", fontsize = font_size)
+    plt.xlabel('Longitude', fontsize = font_size)
+    plt.ylabel('Latitude', fontsize = font_size)
 
     # SALINITY
     plt.subplot(3,3,4) 
     cs = plt.contourf(X, Y, salt1, levels=np.linspace(np.nanmin(salt1),np.nanmax(salt1),10), cmap = "PRGn_r")
+    plt.contourf(X, Y, land_mask, cmap = matplotlib.colors.ListedColormap(colors))
+    plt.contour(X, Y, mask, 2, cmap = "Greys",linestyles='dashed')
     plt.colorbar(cs)
-    plt.title(ens1+" Salinity")
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
+    plt.title(ens1+" Salinity", fontsize = font_size)
+    plt.xlabel('Longitude', fontsize = font_size)
+    plt.ylabel('Latitude', fontsize = font_size)
 
     plt.subplot(3,3,5) 
     cs = plt.contourf(X, Y, salt2, levels=np.linspace(np.nanmin(salt1),np.nanmax(salt1),10), cmap = "PRGn_r")
+    plt.contourf(X, Y, land_mask, cmap = matplotlib.colors.ListedColormap(colors))
+    plt.contour(X, Y, mask, 2, cmap = "Greys",linestyles='dashed')
     plt.colorbar(cs)
-    plt.title(ens2+" Salinity")
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
+    plt.title(ens2+"Salinity", fontsize = font_size)
+    plt.xlabel('Longitude', fontsize = font_size)
+    plt.ylabel('Latitude', fontsize = font_size)
 
     plt.subplot(3,3,6) 
     cs = plt.contourf(X, Y, salt1-salt2, cmap = "PRGn_r")
+    plt.contourf(X, Y, land_mask, cmap = matplotlib.colors.ListedColormap(colors))
+    plt.contour(X, Y, mask, 2, cmap = "Greys",linestyles='dashed')
     plt.colorbar(cs)
-    plt.title("Anomaly")
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
+    plt.title("Anomaly", fontsize = font_size)
+    plt.xlabel('Longitude', fontsize = font_size)
+    plt.ylabel('Latitude', fontsize = font_size)
 
     # MELT
     plt.subplot(3,3,7) 
-    cs = plt.contourf(X, Y, melt1, levels=np.linspace(0,0.002,10), cmap = "Blues_r")
+    cs = plt.contourf(X, Y, melt1, levels=np.linspace(0,0.0002,10), cmap = "Blues_r")
+    plt.contourf(X, Y, land_mask, cmap = matplotlib.colors.ListedColormap(colors))
+    plt.contour(X, Y, mask, 2, cmap = "Greys",linestyles='dashed')
     plt.colorbar(cs)
-    plt.title(ens1+" Melt")
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
+    plt.title(ens1+" Melt", fontsize = font_size)
+    plt.xlabel('Longitude', fontsize = font_size)
+    plt.ylabel('Latitude', fontsize = font_size)
 
     plt.subplot(3,3,8) 
-    cs = plt.contourf(X, Y, melt2, levels=np.linspace(0,0.002,10), cmap = "Blues_r")
+    cs = plt.contourf(X, Y, melt2, levels=np.linspace(0,0.0002,10), cmap = "Blues_r")
+    plt.contourf(X, Y, land_mask, cmap = matplotlib.colors.ListedColormap(colors))
+    plt.contour(X, Y, mask, 2, cmap = "Greys",linestyles='dashed')
     plt.colorbar(cs)
-    plt.title(ens2+" Melt")
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
+    plt.title(ens2+" Melt", fontsize = font_size)
+    plt.xlabel('Longitude', fontsize = font_size)
+    plt.ylabel('Latitude', fontsize = font_size)
 
     plt.subplot(3,3,9) 
     cs = plt.contourf(X, Y, melt1-melt2, cmap = "Blues_r")
+    plt.contourf(X, Y, land_mask, cmap = matplotlib.colors.ListedColormap(colors))
+    plt.contour(X, Y, mask, 2, cmap = "Greys",linestyles='dashed')
     plt.colorbar(cs)
-    plt.title("Anomaly")
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
+    plt.title("Anomaly", fontsize = font_size)
+    plt.xlabel('Longitude', fontsize = font_size)
+    plt.ylabel('Latitude', fontsize = font_size)
    
     fig.tight_layout(pad=2.0)
 
     # save figure
     if save == True:
-        file_out = "PI_ctrl_comp_cont_"+year+"_"+m+"_TSM.png"
+        file_out = exp+"_comp_cont_"+year+"_"+m+"_TSM.png"
         fig.savefig(file_out)
 
     # show figure
