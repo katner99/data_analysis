@@ -54,7 +54,7 @@ def make_animation(fig, ax, params, plot_date, plot_name):
 
     # set colorbar limits
     low_lim = np.nanmin(params['data_plot'])
-    high_lim = np.nanmax(params['data_plot'])
+    high_lim = 10
     
     # calculate the mask
     [land_mask, shelf_mask, colors] = create_mask(params['depth_plot'], params['ocean_plot'])
@@ -72,26 +72,26 @@ def make_animation(fig, ax, params, plot_date, plot_name):
             
         ax.contourf(
             X, Y, land_mask, 
-            cmap=matplotlib.colors.ListedColormap(params['colors_plot'])) # mask out the land
-        ax.contour(X, Y, shelf_mask, 
-        2, 
-        cmap = "Greys",
-        linestyles='dashed')
+            cmap=matplotlib.colors.ListedColormap(colors)) # mask out the land
+
+        ax.contour(X, Y, shelf_mask, 2, 
+                   cmap = "Greys",
+                   linestyles='dashed')
         
         plt.title(plot_date[i].strftime("%m-%Y"))
             
         return cont  
     
     # plot the colorbar once
-    plt.colorbar(animate(0), ticks = [np.linspace(0, 20, 10)])
+    plt.colorbar(animate(0), ticks = np.arange(0, 10, 2))
     
     
     # animate
-    anim = animation.FuncAnimation(fig, animate, frames=len(params['time_plot'])
+    anim = animation.FuncAnimation(fig, animate, frames=len(params['time_plot']))
         
     # save and display
-    anim.save(plot_name, fps = speedy)
-    plt.show()
+    anim.save(plot_name, fps = 2)
+    #plt.show()
     
 def main():
     
@@ -109,7 +109,7 @@ def main():
     # run over a number of years (a slice)
     if year == "slice":
         # set the filepath and colour scheme
-        filepath = "/data/oceans_output/shelf/katner33/PIctrl_output/ensemble_mean/WIND_ensemble_mean_slice.nc"
+        filepath = "/data/oceans_output/shelf/katner33/PIctrl_output/ensemble_mean/PAS_wind07_slice.nc"
     
     else:
          # set up the filepath
@@ -128,40 +128,36 @@ def main():
         print(np.nanmax(data))
         color_scheme = "PRGn_r"
     if var == "SHIfwFlx" or var == "SIheff":
-        data = id.variables[var][:,:,:]
+        data = id.variables[var][120:240,:,:]
         color_scheme = "YlGnBu"
     
     # load up the parameters
-    time = id.variables["time"][:]
+    time = id.variables["time"][120:240]
     lat = id.variables["YC"][:]
     lon = id.variables["XC"][:]
     depth = id.variables["Depth"][:, :]
     ocean = id.variables["maskC"][1, :, :]
-    
-    # set mask
-    #
 
     params = {
-        lon_plot : lon
-        lat_plot : lat
-        time_plot : time
-        data_plot : data
-        depth_plot : depth
-        ocean_plot : ocean
-        color_scheme_plot : color_scheme
-        speeedy : 5
+        'lon_plot' : lon,
+        'lat_plot' : lat,
+        'time_plot' : time,
+        'data_plot' : data,
+        'depth_plot' : depth,
+        'ocean_plot' : ocean,
+        'color_scheme_plot' : color_scheme,
     }
     
     # create list of dates shown in function
-    start = datetime.datetime.strptime("01-2070", "%m-%Y")
-    end = datetime.datetime.strptime("12-2101", "%m-%Y")
+    start = datetime.datetime.strptime("01-2080", "%m-%Y")
+    end = datetime.datetime.strptime("12-2090", "%m-%Y")
     date_generated = [start + datetime.timedelta(days=x) for x in range(0, (end - start).days, 30)]
     
     # write out the file name
-    name = exp_plot +"_cont_"+var+"_.gif"
+    name = exp +"_cont_"+var+"_short.gif"
     
     # pass through the figure and axes you want
-    fig, ax = plt.subplot(figsize=(8,6))
+    fig, ax = plt.subplots(figsize=(8,6))
     
     # run the animation
     make_animation(fig, ax, params, date_generated, name)
