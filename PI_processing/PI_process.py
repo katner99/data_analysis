@@ -1,64 +1,93 @@
 from mitgcm_python.forcing import convert_pre_industrial_data
 from mitgcm_python.file_io import read_binary
+from mitgcm_python.grid import Grid
 
 def main():
-    process_var = True
-    var_names = ['TREFHT', 'QBOT', 'PSL', 'UBOT', 'VBOT', 'PRECT', 'FLDS', 'FSDS']
-
-    if process_var == True:
+    ## check that enough arguments have been input by the user
+    if len(sys.argv) != 2:
+        sys.exit("Stopped - Incorrect number of arguements. Use python PI_process.py <option>")
+    
+    # check the option chosen is valid
+    lemenu = ["open_binary", "process_var", "process_OBCS"]
+    option = str(sys.argv[1])
+    if option not in lemenu:
+        sys.exit("Stopped - Invalid option. Please choose from my amazing menu selection of <oneVSone>, <the_monster>")
+    
+    # process netcdf files and write to binary files
+    if option == lemenu[1]:
+        var_names = ['TREFHT', 'QBOT', 'PSL', 'UBOT', 'VBOT', 'PRECT', 'FLDS', 'FSDS']
         for var in var_names:
             print(('Processing ' + var))
             convert_pre_industrial_data(var)
 
-    year = str(sys.argv[1])
-    option = "binary"
-    single_plot = False
-    exp = "PI"
-    if option == "NCfile":
-        filepath = "/data/oceans_input/raw_input_data/CESM/LENS/daily/TREFHT/"
-        filename = "b.e11.B1850C5CN.f09_g16.005.cam.h1.TREFHT.04020101-04991231.nc"
-        var = "TREFHT"
-        id = nc.Dataset(filepath+filename, 'r')
-        temp = id.variables[var][0:365,:,:]
-        lat = id.variables["lat"][:]
-        lon = id.variables["lon"][:]
-                                
+    # read and check the binary files
     if option == "binary":
-        grid_sizes = [192, 288]
+        grid_filepath = "/data/oceans_output/shelf/kaight/archer2_mitgcm/PAS_LENS001_O/output/192001/MITgcm/output.nc"
+        grid = Grid(grid_filepath)
         dimensions = ('t','y','x')
         filepath = "/data/oceans_input/processed_input_data/CESM/PIctrl/"
         filename = filepath+"PIctrl_ens03_PRECT_"+str(year)
-        data = read_binary(filename, grid_sizes, dimensions)
-        time = range(0, 365)
+        data = read_binary(filename, grid, dimensions)
         print(np.shape(data))
    
     
-    if option == "mask":
-        id = nc.Dataset("/data/oceans_output/shelf/kaight/archer2_mitgcm/PAS_LENS001_O/output/189001/MITgcm/output.nc", 'r')
-        mask = id.variables["maskC"][0,1:384:2,1:576:2]
-        theta = [[np.nan for i in range(cols)] for j in range(rows)]
-        stop_lat = find_nearest(lat, -62.389)
-        start_lat = find_nearest(lat, -75.638)
-        lat = lat[start_lat:stop_lat]
-        stop_lon = find_nearest(lon, 279.94)
-        start_lon = find_nearest(lon, 220.05)
-        lon = lon[start_lon:stop_lon]
-        temp = temp[0,start_lat:stop_lat,start_lon:stop_lon]
+    if option == "OBCS":
+        location = ["N", "W", "E"]
+        variables = [""]
+        for l in location:
+            # set up the climatology years
+            start_year = 2080
+            end_year = 2100
+
+            # set up the number of ensembles
+            ensembles = range(1, 11)
+            var = "VVEL"
+            filepath = "/data/oceans_input/processed_input_data/CESM/PAS_obcs/LENS_obcs/LENS_ens"
+
+            # load up the MITgcm grid from the first LENS run
+            grid_filepath = "/data/oceans_output/shelf/kaight/archer2_mitgcm/PAS_LENS001_O/output/192001/MITgcm/output.nc"
+            grid = Grid(grid_filepath)
+            if location in ["E", "W"]:
+                print("longitude")
+                grid_sizes = [12, grid.nz, grid.ny]
+                dimensions = ('t','z','x')
+                data_ens = np.zeros([len(ensembles), grid.nz,  grid.ny, 12])
+                data_year = np.zeros([21, grid.nz, grid.ny, 12])
+                #grid_sizes = [12, grid.ny]
+                #dimensions = ('t', 'x')
+                #data_ens = np.zeros([len(ensembles), grid.ny, 12])
+                #data_year = np.zeros([21, grid.ny, 12])
+            elif location in ["N", "S"]:
+                print("latitude")
+                grid_sizes = [12, grid.nz, grid.nx]
+                dimensions = ('t','z','y')
+                data_ens = np.zeros([len(ensembles), 12, grid.nx, grid.nz])
+                data_year = np.zeros([21, 12, grid.nx, grid.nz])
+                #grid_sizes = [12, grid.nx]
+                #dimensions = ('t','y')
+                #data_ens = np.zeros([len(ensembles), 12, grid.nx])
+                #data_year = np.zeros([21, 12, grid.nx])
+            else:
+                sys.exit()
     
-    #for t in time:
-    lon = range(0, 288)
-    lat = range(0, 192)
-    data = np.transpose(data[0,:,:])
-    #print(lat, lon)
-    contourplots(lon,lat,data,"temp"+year, year, exp)
-    #make_timeseries_at_point(time, thetaold, thetanew, saltold[:,380,590], saltnew[:,380,590], "Potential surface temperature at 62°S 100°W in "+year, "Salinity at 62°S 100°W in "+year, year)
-    #theta_over_area=make_timeseries_over_area(time,theta,"temperature over the area "+year, year)
-    
-   # filename = "/users/katner33/processed_data_test/TREFHT_1920"
-   # grid_sizes = [192,288]
-   # dimensions = ('t', 'y', 'x')
-   # data = read_binary(filename, grid_sizes, dimensions)
-   # print(data[1:10,1:10])
+                
+            for year in range(start_year, end_year+1):
+                for ens in ensembles: 
+                    ens_str = str(ens).zfill(3)
+                    filename = filepath + ens_str+"_"+var+"_"+location+"_"+str(year)
+
+                    # read the variable
+                    data = read_binary(filename, grid_sizes, dimensions)
+                    #print(np.shape(data), np.shape(data_ens))
+                    data_ens[ens-1,:, :, :] = data
+                data_year[year-start_year, :, :, :] = np.mean(data_ens, axis = 0)
+                print(year)
+            data = np.mean(data_year, axis = 0)
+
+            #ẁrite out the file
+            out_filepath = "/data/oceans_input/processed_input_data/CESM/PI_CTRL_obcs/LENS_climatology_"+var+"_"+location+"_"+str(start_year)+"-"+str(end_year)
+            write_binary(data, out_filepath)
+        
 
 if __name__ == '__main__':
     main() # run the program
