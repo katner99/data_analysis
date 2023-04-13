@@ -32,28 +32,24 @@ def average_over_depth(grid, data, mask, depth_range):
     return np.sum(data*dz*hfac*mask, axis=-3)/np.sum(dz*hfac*mask, axis=-3)
 
 def read_variable(input_data, var, grid, depth_range = None):
+    # Number of days in each month
+    days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
     if var == "THETA":
         data = mask_3d(input_data.THETA.values, grid, time_dependent=True)
         data_cut = data[:, depth_range[0]:depth_range[1], :, :]
         mask_cut = np.invert(data.mask).astype(float)[:, depth_range[0]:depth_range[1], :, :]
-        return np.mean(average_over_depth(grid, data_cut, mask_cut, depth_range), axis = 0)
+        return np.average(average_over_depth(grid, data_cut, mask_cut, depth_range), axis = 0, weights=days_in_month)
 
     elif var == "SALT":
         data = mask_3d(input_data.SALT.values, grid, time_dependent=True)
-        return np.mean(data[:,1,:,:], axis = 0)
+        return np.average(data[:,0,:,:], axis = 0, weights=days_in_month)
         
     else:
         hfac = grid.hfac[0,:,:]
         hfac = add_time_dim(hfac, input_data.time.values.shape[0])
         data = np.ma.masked_where(hfac, input_data[var].values)
-        return np.mean(data, axis = 0)
-
-def read_xarray(var, input_file, mask):
-    data = np.mean(input_file.var.values[:,:,98,329:350], axis = 0)
-    salt = np.mean(input_file.SALT.values[:,:,98,329:350], axis = 0)
-    data[mask == 0] = np.nan
-    salt[(mask == 0) or (salt == 0)] = np.nan
-    return data, salt
+        return np.weights(data, axis = 0, weights=days_in_month)
 
 
 def interpolate_currents(V, zon_or_mer):
@@ -66,32 +62,17 @@ def interpolate_currents(V, zon_or_mer):
         V_interp[...,-1,:] = V[...,-1,:]
     return V_interp
 
-def read_netcdf(filepath, filename):
-    id = nc.Dataset(filepath+filename, 'r')
-    time = id.variables["time"][:]
-    lat = id.variables["YC"][:]
-    lon = id.variables["XC"][:]
-    land_mask = id.variables["maskC"][:,:,:]
-    ice_mask = id.variables["SIarea"][:,:,:]
-    if var == "THETA":
-        data = id.variables[var][:,11:21,:,:]
-        cs = "coolwarm"
-    if var == "SALT":
-        data = id.variables[var][:,1,:,:]
-        data[data == 0] = np.nan
-        cs = "PRGn_r"
-    if var == "SIfwmelt":
-        data = id.variables[var][:,:,:]
-        cs = "Blues_r" 
-    return time, lat, lon, land_mask, ice_mask, data. cs
-
 # function to create timeseries over a given area slice (lat_range, lon_range)
 def read_variable_to_timeseries_cut(var, input_data, grid, lat_range, lon_range, depth_range=None, time=12): 
     # Check if depth_range is set for THETA variable
     if var == 'THETA' and depth_range is None: 
         print('Error: depth_range must be set for THETA variable')
         sys.exit()
-        
+    
+    # Check if input_data contains 12 years of data
+    if len(input_data.time.values) != time:
+        print('Error: input_data must contain {} years of data'.format(time))
+        sys.exit()
 
     # Prepare the data and grid for volume average
     if var == "THETA":
@@ -107,8 +88,8 @@ def read_variable_to_timeseries_cut(var, input_data, grid, lat_range, lon_range,
 
     elif var == "SALT":
         data = mask_3d(input_data[var].values, grid, time_dependent=True)
-        data_cut = data[:, 1, lat_range[0]:lat_range[1], lon_range[0]:lon_range[1]]
-        mask_cut = np.invert(data[:, 1, :, :].mask).astype(float)[:, lat_range[0]:lat_range[1], lon_range[0]:lon_range[1]]
+        data_cut = data[:, 0, lat_range[0]:lat_range[1], lon_range[0]:lon_range[1]]
+        mask_cut = np.invert(data[:, 0, :, :].mask).astype(float)[:, lat_range[0]:lat_range[1], lon_range[0]:lon_range[1]]
         dA = grid.dA
         dA = add_time_dim(dA, data.shape[0])
         dA_cut = dA[:, lat_range[0]:lat_range[1],lon_range[0]:lon_range[1]]
@@ -144,14 +125,8 @@ def append_years(n_years, start_year, filepath, filename, grid, lat_range, lon_r
         except FileNotFoundError:
             print(f"error: {input_file}")
             fillarray = np.full(12, np.nan)
-            theta_timeseries = np.append(theta_timeseries, fillarray)
-            salt_timeseries = np.append(salt_timeseries, fillarray)
-            melt_timeseries = np.append(melt_timeseries, fillarray)
-            continue  
-        
-        if len(input_data.time.values) != 12:
-            print(f"Error! Check the time distribution for {i} year")
-            sys.exit()
+            timeseries = np.append(timeseries, fillarray)
+            continue            
            
         # create timeseries
         theta = read_variable_to_timeseries_cut("THETA", input_data, grid, lat_range, lon_range, depth_range)
