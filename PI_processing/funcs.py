@@ -8,7 +8,7 @@ import sys
 import datetime
 import netCDF4 as nc
 import xarray as xr
-from mitgcm_python.utils import mask_land_ice, mask_3d, add_time_dim, z_to_xyz
+from mitgcm_python.utils import mask_land_ice, mask_3d, add_time_dim, z_to_xyz, apply_mask
 from mitgcm_python.calculus import over_area
 from mitgcm_python.file_io import read_binary
 
@@ -48,10 +48,37 @@ def read_variable(input_data, var, grid, depth_range = None):
     else:
         hfac = grid.hfac[0,:,:]
         hfac = add_time_dim(hfac, input_data.time.values.shape[0])
-        data = np.ma.masked_where(hfac, input_data[var].values)
-        return np.weights(data, axis = 0, weights=days_in_month)
+        data = np.ma.masked_where(hfac == 0, input_data[var].values[..., :, :])
+        return np.average(data, axis = 0, weights=days_in_month)
 
-
+def create_profile(input_data, var, grid, lat_range, lon_range, time = 12, timeseries = True):
+    # Check if input_data contains 12 years of data
+    if len(input_data.time.values) != 12:
+        print('Error: input_data must contain {} years of data'.format(time))
+        fillarray = np.full((12, 50), np.nan)
+        return fillarray
+    
+    else:
+        # Number of days in each month
+        days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    
+        # apply mask and cut over the area defined
+        data = mask_3d(input_data[var].values, grid, time_dependent=True)
+        data = apply_mask(data, (grid.get_hfac(gtype='t')==0) & (input_data.Depth.values >= 1500), time_dependent=True, depth_dependent=True)
+        data_cut = data[:, :, lat_range[0]:lat_range[1], lon_range[0]:lon_range[1]]
+        mask_cut = np.invert(data[:, :, :, :].mask).astype(float)[:, :, lat_range[0]:lat_range[1], lon_range[0]:lon_range[1]]
+        dA = grid.dA
+        dV = add_time_dim(dA, data.shape[1])
+        dV = add_time_dim(dV, data.shape[0])    
+        dV_cut = dV[:, :, lat_range[0]:lat_range[1],lon_range[0]:lon_range[1]]
+    
+        # calculate and return average, either a timeseries or average over the year
+        if timeseries:
+            return np.sum(data_cut*dV_cut*mask_cut, axis=(-2,-1))/np.sum(dV_cut*mask_cut, axis=(-2,-1))
+        else:
+            return np.average(np.sum(data_cut*dV_cut*mask_cut, axis=(-2,-1))/np.sum(dV_cut*mask_cut, axis=(-2,-1)), axis = 0, weights=days_in_month)
+        
+    
 def interpolate_currents(V, zon_or_mer):
     V_interp = np.empty(np.shape(V))
     if zon_or_mer == "zonal":
@@ -63,7 +90,7 @@ def interpolate_currents(V, zon_or_mer):
     return V_interp
 
 # function to create timeseries over a given area slice (lat_range, lon_range)
-def read_variable_to_timeseries_cut(var, input_data, grid, lat_range, lon_range, depth_range=None, time=12): 
+def make_timeseries(var, input_data, grid, lat_range=None, lon_range=None, depth_range=None, time=12): 
     # Check if depth_range is set for THETA variable
     if var == 'THETA' and depth_range is None: 
         print('Error: depth_range must be set for THETA variable')
@@ -72,7 +99,8 @@ def read_variable_to_timeseries_cut(var, input_data, grid, lat_range, lon_range,
     # Check if input_data contains 12 years of data
     if len(input_data.time.values) != time:
         print('Error: input_data must contain {} years of data'.format(time))
-        sys.exit()
+        fillarray = np.full(12, np.nan)
+        return fillarray
 
     # Prepare the data and grid for volume average
     if var == "THETA":
@@ -108,32 +136,44 @@ def read_variable_to_timeseries_cut(var, input_data, grid, lat_range, lon_range,
         return np.sum(data_cut*dA_cut*mask_cut, axis=(-2,-1))/np.sum(dA_cut*mask_cut, axis=(-2,-1))
 
 def append_years(n_years, start_year, filepath, filename, grid, lat_range, lon_range, depth_range = None):
-    theta_timeseries = []
-    salt_timeseries = []
-    melt_timeseries = []
-    # run through the years
+    # initialise the years
+    hovmoller_member = np.zeros((12 * n_years, 50))
+    theta_member = []
+    salt_member = []
+    seaice_member = []
+
+    #run through the years
     for i in range(n_years):
-        # read through all the years
+        # read file of that year
         fileyear=str(start_year+i)
-        input_file = filepath+fileyear+"01/MITgcm/"+filename
+        input_file = f"{filepath}{fileyear}01/MITgcm/{filename}"
         
-        percent = int(((i)/n_years)*100)
-        print(str(percent) + "% complete")
         # check that the year exists
         try:
             input_data = xr.open_dataset(input_file)
         except FileNotFoundError:
             print(f"error: {input_file}")
-            fillarray = np.full(12, np.nan)
-            timeseries = np.append(timeseries, fillarray)
+            fillarray = np.full((12, 50), np.nan)
+            hovmoller_member[i * 12 : (i + 1) * 12, :] = fillarray
+            theta_member.extend(fillarray[:, 0])
+            salt_member.extend(fillarray[:, 0])
+            seaice_member.extend(fillarray[:, 0])
             continue            
            
         # create timeseries
-        theta = read_variable_to_timeseries_cut("THETA", input_data, grid, lat_range, lon_range, depth_range)
-        salt = read_variable_to_timeseries_cut("SALT", input_data, grid, lat_range, lon_range)
-        melt = read_variable_to_timeseries_cut("SIheff", input_data, grid, lat_range, lon_range)
+        theta = make_timeseries("THETA", input_data, grid, lat_range, lon_range, depth_range)
+        salt = make_timeseries("SALT", input_data, grid, lat_range, lon_range)
+        seaice = make_timeseries("SIheff", input_data, grid, lat_range, lon_range)
+        hovmoller = create_profile(input_data, "THETA", grid, lat_range, lon_range)
+        
            
-        theta_timeseries = np.append(theta_timeseries, theta)
-        salt_timeseries = np.append(salt_timeseries, salt)
-        melt_timeseries = np.append(melt_timeseries, melt)
-    return theta_timeseries, salt_timeseries, melt_timeseries
+        hovmoller_member[i * 12 : (i + 1) * 12,:] = hovmoller
+        theta_member.extend(theta)
+        salt_member.extend(salt)
+        seaice_member.extend(seaice)
+
+        # print progress
+        percent = int(((i + 1) / n_years) * 100)
+        print(f"{percent}% complete")
+
+    return hovmoller_member, theta_member, salt_member, seaice_member
