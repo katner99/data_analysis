@@ -109,7 +109,7 @@ def main():
     # run over a number of years (a slice)
     if year == "slice":
         # set the filepath and colour scheme
-        filepath = "/data/oceans_output/shelf/katner33/PIctrl_output/ensemble_mean/PAS_wind07_slice.nc"
+        filepath = "/data/oceans_output/shelf/katner33/PIctrl_output/CUR_wind09_slice.nc"
     
     else:
          # set up the filepath
@@ -128,11 +128,11 @@ def main():
         print(np.nanmax(data))
         color_scheme = "PRGn_r"
     if var == "SHIfwFlx" or var == "SIheff":
-        data = id.variables[var][120:240,:,:]
+        data = id.variables[var][120:,:,:]
         color_scheme = "YlGnBu"
     
     # load up the parameters
-    time = id.variables["time"][120:240]
+    time = id.variables["time"][120:]
     lat = id.variables["YC"][:]
     lon = id.variables["XC"][:]
     depth = id.variables["Depth"][:, :]
@@ -149,8 +149,8 @@ def main():
     }
     
     # create list of dates shown in function
-    start = datetime.datetime.strptime("01-2080", "%m-%Y")
-    end = datetime.datetime.strptime("12-2090", "%m-%Y")
+    start = datetime.datetime.strptime("01-2030", "%m-%Y")
+    end = datetime.datetime.strptime("12-2050", "%m-%Y")
     date_generated = [start + datetime.timedelta(days=x) for x in range(0, (end - start).days, 30)]
     
     # write out the file name

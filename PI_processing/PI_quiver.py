@@ -5,82 +5,45 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from mitgcm_python.plot_latlon import plot_vel
-from plots import interpolate_currents
+from funcs import interpolate_currents
+from plots import quiver_plot, compare_quiver_plots
+import time
 
 def main():
-    year = str(sys.argv[1])
-    var = str(sys.argv[2])
+    start_time = time.time()
+    year = str(2099)
+    var = str("wind")
+    font_size = 20
 
     # load the initial files
-    filepath = "/data/oceans_output/shelf/katner33/PIctrl_output/PAS_ctrl08/output/"+year+"01/MITgcm/"
+    filepath1 = "/data/oceans_output/shelf/katner33/PIctrl_output/PAS_ctrl08/output/"+year+"01/MITgcm/"
+    filepath2 = "/data/oceans_output/shelf/kaight/archer2_mitgcm/PAS_LENS001_O/output/"+year+"01/MITgcm/"
     filename = "output.nc"
-    id = nc.Dataset(filepath+filename, 'r')
+    id1 = nc.Dataset(filepath1+filename, 'r')
+    id2 = nc.Dataset(filepath2+filename, 'r')
 
-    if var == "wind":
-        u = "EXFuwind"
-        v = "EXFvwind"
-        U = id.variables[u][0,0:-1:20,0:-1:20]
-        V = id.variables[v][0,0:-1:20,0:-1:20]
+    u = "EXFuwind"
+    v = "EXFvwind"
+    U = id1.variables[u][0,:,:]
+    V = id1.variables[v][0,:,:]
+    TAU1 = id1.variables["oceTAUX"][0,:,:]
+    print("--- %s seconds ---" % (time.time() - start_time))
+    tau_interp = interpolate_currents(TAU1, "zonal")
+    print("--- %s seconds ---" % (time.time() - start_time))
+    U2 = id2.variables[u][0,:,:]
+    V2 = id2.variables[v][0,:,:]
+    TAU2 = id2.variables["oceTAUX"][0,:,:]
     
-        temp = id.variables["THETA"][0,11:21,:,:]
-        temp_d = np.mean(temp, axis=0)
-    
-        time = id.variables["time"][:]
-        lat = id.variables["YC"][:]
-        lon = id.variables["XC"][:]
-        land_mask = id.variables["maskC"][1,:,:]
-       
-        [X,Y] = np.meshgrid(lon[0:-1:20], lat[0:-1:20])
-        [LON,LAT] = np.meshgrid(lon, lat)
-        temp_d[land_mask == 0] = np.nan
-        title = "Test"
-        fig, ax = plt.subplots()
-
-        cp = plt.contourf(LON, LAT, temp_d, cmap="coolwarm")
-        cb = plt.colorbar(cp)
-        quiv = plt.quiver(X, Y, U, V, color = "white")
-
-        plt.show()
-
-    if var == "currents":
-        # load up the current speeds
-        U = id.variables["UVEL"][0,0,:,:] # [time, Z, YC, XG]
-        V = id.variables["VVEL"][0,0,:,:] # [time, Z, YG, XC]
-        # load up the grid
-        lat = id.variables["YC"][:]
-        lon = id.variables["XC"][:]
-        [LAT, LON] = np.meshgrid(lon, lat)
-        # load up the corresponding masks
-        umask = id.variables["hFacW"] # [Z, YC, XG]
-        vmask = id.variables["hFacS"] # [Z, YG, XC]
-        land_mask = id.variables["maskC"][1,:,:]
-        # apply the mask
-        U[umask == 1] = np.nan
-        V[vmask == 1] = np.nan
-        # plot using Kaitlin's code
-        [new_u, new_v] = interpolate_currents(U, V)
-
-        temp = id.variables["THETA"][0,11:21,:,:]
-        temp_d = np.mean(temp, axis=0)
-    
-        time = id.variables["time"][:]
-        lat = id.variables["YC"][:]
-        lon = id.variables["XC"][:]
-
-        temp_d[land_mask == 0] = np.nan
-        title = "Test"
-        fig, ax = plt.subplots()
-        
-        u = new_u[0:-1:20,0:-1:20]
-        v = new_v[0:-1:20,0:-1:20]
-        x = lon[0:-1:20]
-        y = lat[0:-1:20]
-        [X,Y]= np.meshgrid(x,y)
-        #cp = plt.contourf(LON, LAT, temp_d, cmap="coolwarm")
-        #cb = plt.colorbar(cp)
-        quiv = plt.quiver(X, Y, u, v, color = "red")
-
-        plt.show()
+    tau_interp2 = interpolate_currents(TAU2, "zonal")
+    print("--- %s seconds ---" % (time.time() - start_time))
+    lat = id1.variables["YC"][:]
+    lon = id1.variables["XC"][:]
+    depth = id1.variables["Depth"][:,:]
+    ice_mask = id1.variables["maskC"][1,:,:]
+    print("--- %s seconds ---" % (time.time() - start_time))
+     
+    quiver_plot(U, V, lon, lat, exp = "PI_ctrl", var = "wind_stress", depth = depth, ice_mask = ice_mask, year = year, interp = False, overlay = True, func = tau_interp, show = False, save = True)
+    #compare_quiver_plots(U2, V2, U1, V1, tau_interp2, tau_interp1, "LENS", "PIctrl", lon, lat, var, depth, ice_mask, year, interp = False, show = False, save = True)
 
 if __name__ == '__main__':
     main() # run the program
