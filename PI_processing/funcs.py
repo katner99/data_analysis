@@ -117,7 +117,6 @@ def make_timeseries(var, input_data, grid, lat_range=None, lon_range=None, depth
         
     else:
         hfac = grid.hfac[0,:,:]
-        print("SIheff")
         hfac = add_time_dim(hfac, input_data.time.values.shape[0])
         data = np.ma.masked_where(hfac, input_data.SIheff.values)
         data_cut = data[:, lat_range[0]:lat_range[1], lon_range[0]:lon_range[1]]
@@ -136,15 +135,16 @@ def mask(input_data, grid, time_dependent=True):
 
 def append_years(n_years, start_year, filepath, filename, grid, lat_range, lon_range, depth_range = None):
     # initialise the years
-    hovmoller_member = np.zeros((12 * n_years, 50))
-    #theta_member = []
-    #salt_member = []
-    #seaice_member = []
+    #hovmoller_member = np.zeros((12 * n_years, 50))
+    theta_member = []
+    salt_member = []
+    seaice_member = []
+
+    print(start_year)
 
     #run through the years
     for i in range(n_years):
         # read file of that year
-        #print(np.shape(theta_member))
         fileyear=str(start_year+i)
         input_file = f"{filepath}{fileyear}01/MITgcm/{filename}"
         
@@ -152,29 +152,23 @@ def append_years(n_years, start_year, filepath, filename, grid, lat_range, lon_r
         try:
             input_data = xr.open_dataset(input_file)
         except FileNotFoundError:
-            print(f"error: {input_file}")
-            fillarray = np.full((12, 50), np.nan)
-            hovmoller_member[i * 12 : (i + 1) * 12, :] = fillarray
-            #theta_member.extend(fillarray[:, 0])
-            #salt_member.extend(fillarray[:, 0])
-            #seaice_member.extend(fillarray[:, 0])
-            continue            
+            sys.exit(f"Stopped - Could not find directory {filepath}")
            
         # create timeseries
-        #theta = make_timeseries("THETA", input_data, grid, lat_range, lon_range, depth_range)
-        #salt = make_timeseries("SALT", input_data, grid, lat_range, lon_range)
-        #seaice = make_timeseries("SIheff", input_data, grid, lat_range, lon_range)
-        hovmoller = create_profile(input_data, "THETA", grid, lat_range, lon_range)
+        theta = make_timeseries("THETA", input_data, grid, lat_range, lon_range, depth_range)
+        salt = make_timeseries("SALT", input_data, grid, lat_range, lon_range)
+        seaice = make_timeseries("SIheff", input_data, grid, lat_range, lon_range)
+        #ovmoller = create_profile(input_data, "THETA", grid, lat_range, lon_range)
         
            
-        hovmoller_member[i * 12 : (i + 1) * 12,:] = hovmoller
-        #theta_member.extend(theta)
-        #salt_member.extend(salt)
-        #seaice_member.extend(seaice)
+        #hovmoller_member[i * 12 : (i + 1) * 12,:] = hovmoller
+        theta_member.extend(theta)
+        salt_member.extend(salt)
+        seaice_member.extend(seaice)
 
         # print progress
         percent = int(((i + 1) / n_years) * 100)
         print(f"{percent}% complete")
 
-    #return hovmoller_member, theta_member, salt_member, seaice_member
-    return hovmoller_member
+    return theta_member, salt_member, seaice_member
+    #return hovmoller_member
