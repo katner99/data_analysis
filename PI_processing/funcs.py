@@ -118,12 +118,12 @@ def make_timeseries(var, input_data, grid, lat_range=None, lon_range=None, depth
     else:
         hfac = grid.hfac[0,:,:]
         hfac = add_time_dim(hfac, input_data.time.values.shape[0])
-        data = np.ma.masked_where(hfac, input_data.SIheff.values)
+        data = np.ma.masked_where(hfac == 0, input_data.SIheff.values)
         data_cut = data[:, lat_range[0]:lat_range[1], lon_range[0]:lon_range[1]]
         mask_cut = np.invert(data.mask).astype(float)[:, lat_range[0]:lat_range[1], lon_range[0]:lon_range[1]]
         dA = grid.dA
         dA = add_time_dim(dA, data.shape[0])
-        dA_cut = dA[:, lat_range[0]:lat_range[1],lon_range[0]:lon_range[1]]
+        dA_cut = dA[:, lat_range[0]:lat_range[1],lon_range[0]:lon_range[1]]       
         return np.nanmax(data_cut, axis=(-2, -1))
         #return np.sum(data_cut*dA_cut*mask_cut, axis=(-2,-1))/np.sum(dA_cut*mask_cut, axis=(-2,-1))
 
