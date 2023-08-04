@@ -16,6 +16,27 @@ def find_years(start_year, filepath):
     
 
 def main():
+    # ask for the ensemble member and experiment
+    experiment = input('Enter the experiment (eg. WIND, CTRL, TEMP): ').strip()
+    ens_member = input('Enter the ensemble member (1-3): ').strip()
+
+    #set up filepath and check that it exists
+    if experiment == "LENS":
+        filepath = lens_path + "PAS_LENS00" + str(ens_member)+ "_noOBC/"
+    else:
+        filepath = output_path + experiment + "_ens0" + str(ens_member)+ "_noOBC/"
+
+    if not os.path.exists(filepath) or not os.path.isdir(filepath):
+        sys.exit(f"Stopped - Could not find directory {filepath}")
+
+    # search for any previous timeseries:
+    prev_timeseries = [filename for filename in os.listdir(filepath) if filename.startswith("timeseries")]
+
+    if not prev_timeseries:
+        print('No previous timeseries detected')
+    else:
+        print(f'Previous timeseries detected: {prev_timeseries}')
+    
     # ask for the start year
     start_date = input('Enter the date code to start or add to the timeseries at (eg 199201): ').strip()
     # Make sure it's a date
@@ -28,17 +49,9 @@ def main():
         print('Error: invalid date code ' + start_date)
         sys.exit()
 
-    # ask for the ensemble member and experiment
-    ens_member = input('Enter the ensemble member (1-3): ').strip()
-    experiment = input('Enter the experiment (eg. WIND, CTRL, TEMP): ').strip()
-    
-    #set up filepath and check that it exists
-    filepath = output_path + experiment + "_ens0" + str(ens_member)+ "_noOBC/output/"
-    if not os.path.exists(filepath) or not os.path.isdir(filepath):
-        sys.exit(f"Stopped - Could not find directory {filepath}")
-
-    n_years = find_years(start_date, filepath)
-    #n_years = 15
+    filepath_years = filepath + "/output/"
+    n_years = find_years(start_date, filepath_years)
+    #n_years = 181
 
     # Set up a new xarray dataset with the required dimensions (replace this with your data)
     # set up grid
@@ -49,17 +62,20 @@ def main():
     depth_range = [find_nearest(grid_file.Z.values, -200), find_nearest(grid_file.Z.values, -700)]
     lon_range = [find_nearest(grid_file.XC.values, 250), find_nearest(grid_file.XC.values, 260)]
     lat_range = [find_nearest(grid_file.YC.values, -76), find_nearest(grid_file.YC.values, -72)]
-    
+
     # set up output file
     filename = "output.nc"
     start_year = int(start_date[:4])
     end_year = start_year + n_years
-    output_file = output_path + experiment + "_ens0" + str(ens_member)+ "_noOBC/" + 'timeseries'+str(end_year)+'.nc'
+    if experiment == 'LENS':
+        output_file = output_path + 'timeseries'+str(end_year)+'_experiment'+ens_member+'.nc'
+    else:
+        output_file = filepath + 'timeseries'+str(end_year)+'.nc'
 
     if start_date == "192001":
         print(f"First year in the dataset. Creating new timeseries.")
             
-        [theta, salt, seaice] = append_years(n_years, start_year, filepath, filename, grid, lat_range, lon_range, depth_range)
+        [theta, salt, seaice] = append_years(n_years, start_year, filepath_years, filename, grid, lat_range, lon_range, depth_range)
             
         # Create the xarray dataset
         dataset = xr.Dataset(
@@ -75,7 +91,7 @@ def main():
        
     else:
         # check for previous timeseries
-        input_file = output_path + experiment + "_ens0" + str(ens_member)+ "_noOBC/" + 'timeseries'+str(start_year)+'.nc'
+        input_file = filepath + 'timeseries'+str(start_year)+'.nc'
 
         try:
             open(input_file)
@@ -86,10 +102,8 @@ def main():
         dataset_old = xr.open_dataset(input_file)
         months_to_skip = (int(start_date[:4])-1920)*12
 
-        #print(months_to_skip, np.arange(months_to_skip, months_to_skip+12*n_years), n_years)
-        
         # Add more variables (theta, salt, sea_ice) to the existing dataset
-        [theta, salt, seaice] = append_years(n_years, start_year, filepath, filename, grid, lat_range, lon_range, depth_range)
+        [theta, salt, seaice] = append_years(n_years, start_year, filepath_years, filename, grid, lat_range, lon_range, depth_range)
 
         # Create the xarray dataset
         dataset_new = xr.Dataset(
@@ -102,7 +116,6 @@ def main():
                 'time': np.arange(months_to_skip, months_to_skip+12*n_years),
             }
         )
-
 
         combined_data = []
         # Concatenate the new data for each variable along the time dimension
@@ -122,12 +135,11 @@ def main():
                 'time': np.arange(len(combined_data[0])),
             }
         )
+        # remove the previous file
+        os.remove(input_file)
             
     # Save the dataset to a NetCDF file
     dataset.to_netcdf(output_file) 
-
-    # remove the previous file
-    os.remove(input_file)
    
 
 if __name__ == "__main__":
