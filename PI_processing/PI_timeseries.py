@@ -1,46 +1,98 @@
 import matplotlib
 matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 
 import numpy as np
 import xarray as xr
-from scipy.ndimage.filters import gaussian_filter1d
+from funcs import moving_average
+import os
+import sys
 
 from directories_and_paths import *
-from funcs import find_nearest, make_timeseries
-from mitgcm_python.grid import Grid
 
-
-def plot_timeseries(ax, time, var_ensemble, color, label, linestyle, plot_range = False, min_values = None, max_values = None):
-    ax.plot(time, var_ensemble, linestyle, color=color, label=label)
+def plot_timeseries(ax, time, var_ensemble, color, linestyle, plot_range = False, min_values = None, max_values = None, alpha = 0.5, label = None):
+    line = ax.plot(var_ensemble, linestyle, color=color, alpha=alpha, label = label)
     if plot_range:
         ax.fill_between(time, min_values, max_values, color=color, alpha=0.5)
+    if label:
+        line[0].set_label(label)  # Set label to the line, not to the ax
+    
+    return line  # Return the Line2D object
 
-def plot_comparison(timeseries_data, var, ylabel, xlabel, x_values, var_name, title, file_out, smooth = False, plot_range = False, min_values = None, max_values = None):
-    var_ensemble = []
-    linestyle = '-'
+
+def plot_comparison(var, data, experiments, ensemble_members, ylabel, xlabel, time, title, file_out, smooth = False, plot_range = False, min_values = None, max_values = None, linearity = False):
     
-    for ensemble_member in timeseries_data:
-        if smooth:
-            var_smooth = gaussian_filter1d(ensemble_member, sigma=5)
-            var_ensemble.append(var_smooth)
-        else:
-            var_ensemble.append(ensemble_member)
-    
+    #linestyle = ['-', '--', '-.', '-', '--', '-.', '-', '--', '-.', '-', '--', '-.']
+    colors = ["lightblue", "sandybrown", "lightgreen", "lightpink"]
+    dark_colors = ["deepskyblue", "darkgoldenrod", "forestgreen", "orchid"]
+
     fig, ax = plt.subplots(figsize=(12, 5))
     plt.rcParams.update({'font.size': 14})
-    
-    colors = ['seagreen', 'orchid', 'dodgerblue', 'orange']
-    
-    for i, var_member in enumerate(var_ensemble):
-        plot_timeseries(ax, x_values, var_member, colors[i], var_name[i],
-                        linestyle, plot_range, min_values, max_values)
-    
+    experiment_info = {}  # Dictionary to store experiment information
+    means = []
+
+    for exp_idx, exp in enumerate(experiments):
+        # Plot individual ensemble members
+        shortest_length = np.min([len(data[exp][ens][ts_idx]) for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))])
+        print(exp, shortest_length)
+        for ens in ensemble_members:
+            timeseries=data[exp][ens]
+            if smooth:
+                var_smooth = moving_average(timeseries, 30*12)
+                var_ensemble = var_smooth
+            else:
+                var_ensemble = np.transpose(timeseries)
+
+            if exp not in experiment_info:
+                experiment_info[exp] = {
+                    "color": colors[exp_idx],
+                    "label": f"{exp}",
+                    "lines": [],  # Store Line2D objects for each experiment
+                }
+
+            line = plot_timeseries(ax, time, var_ensemble, experiment_info[exp]["color"], "-", plot_range, min_values, max_values, alpha = 0.5,label="_" + experiment_info[exp]["label"])
+            experiment_info[exp]["lines"].append(line[0]) 
+        # Calculate and plot the experiment mean 
+        if var == "theta":
+            experiment_mean = moving_average(np.mean([data[exp][ens][ts_idx][:shortest_length] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0), 30*12)
+            x_values = len(experiment_mean)
+            ax.plot(experiment_mean, color=dark_colors[exp_idx], label=f"{exp} mean", alpha = 1)
+            #if linearity == True:
+             #   means.append(experiment_mean[:1189])
+        else:
+            x_values = len(time)
+            
+    if linearity == True:
+        #print(np.shape(data["CTRL"][1][:1548]))
+        linearity_members = []
+        ctrls = []
+        lenss = []
+        
+        for ens in ensemble_members:
+            linearity_members.append(np.array(data["CTRL"][ens])+np.array(data["LENS"][ens][:][:1548])-np.array(data["WIND"][ens][:][:1548])-np.array(data["TEMP"][ens][:][:1548]))
+            ctrls.append(np.array(data["CTRL"][ens]))
+            lenss.append(np.array(data["LENS"][ens]))
+        linearity = np.mean(linearity_members, axis = 0)
+        ctrl_mean = np.mean(ctrls, axis = 0)
+        lens_mean = np.mean(lenss, axis = 0)
+        print(np.shape(linearity))
+        percentage = moving_average(linearity*100/(lens_mean-ctrl_mean), 12*30)
+        
+        ax2 = ax.twinx()
+        ax2.plot(percentage, color = 'black', label = "linearity")
+        ax2.set_ylabel("Linearity/total change", fontsize=14)
+        ax2.legend()
+
+    for exp, info in experiment_info.items():
+        if info["label"]:
+            # Make sure the label is set only once
+            info["lines"][0].set_label(info["label"])
+
+    ax.legend()
     ax.set_ylabel(ylabel, fontsize=14)
-    ax.legend(fancybox=True)
-    step = int(len(x_values)/len(xlabel))
-    ax.set_xticks(np.arange(0, len(x_values), step))
+    ax.set_xticks(np.arange(0, x_values, 100))
     ax.set_xticklabels(xlabel.astype(str), rotation=45)
-    ax.set_xlim([0, len(x_values)])
+    ax.set_xlim([0, x_values])
     ax.grid(alpha=0.8)
     ax.set_title(title)
     
@@ -48,49 +100,55 @@ def plot_comparison(timeseries_data, var, ylabel, xlabel, x_values, var_name, ti
     plt.show()
 
 
+
 def main():
-
-    var = "SIheff"
-    var_name = ["wind forcing ensemble mean", "wind forcing new compiler"]
-    title = "wind forcing"
-    filepaths = [ensemble_mean_path + "wind_ensemble_mean.nc",
-                 output_path + "PAS_wind09_slice.nc"]
-
-    # use below for the comparison of four
-    # var_name = ["pre-industrial forcing", "RCP 8.5 forcing", "wind forcing", "thermodynamic forcing"]
-    # title = "Continental shelf mean temperature between 200m and 700m"
-    # exp = "_ensemble_mean"
-    # filepaths = [ensemble_mean_path + "ctrl" + ensemble_mean_file,
-    #              ensemble_mean_path + "lens" + ensemble_mean_file,
-    #              ensemble_mean_path + "wind" + ensemble_mean_file,
-    #              ensemble_mean_path + "temp" + ensemble_mean_file]
-
-    ylabel = "Temperature (°C)"
-    xlabel = np.arange(2070, 2100)
-    data = []
-                  
-    data_1 = xr.open_dataset(filepaths[0])
-    data_2 = xr.open_dataset(filepaths[1])
+    if len(sys.argv) != 2:
+        sys.exit("Stopped - Incorrect number of arguements. Use python PI_timeseries.py <var>")
     
-    # set up grid
-    grid = Grid(grid_filepath)
-    grid_file = xr.open_dataset(grid_filepath)
+    # set up the variables you need
+    var = str(sys.argv[1])
+    experiments = ["WIND", "TEMP", "CTRL", "LENS"]
+    ensemble = [1,2,3]
     
-    # set lat, lon, and depth range
-    depth_range = [find_nearest(grid_file.Z.values, -200), find_nearest(grid_file.Z.values, -700)]
-    lon_range = [find_nearest(grid_file.XC.values, 250), find_nearest(grid_file.XC.values, 260)]
-    lat_range = [find_nearest(grid_file.YC.values, -76), find_nearest(grid_file.YC.values, -72)]
+    # Define the output structure
+    data = {exp: {ens: [] for ens in ensemble} for exp in experiments}
+    time = []
 
-    time = data_1.time.values
+    for exp in experiments:
+        timeseries = []
+        for ens in ensemble:
+            # read the filename of the experiment
+            if exp == "LENS":
+                filepath = output_path+"timeseries2101_experiment"+str(ens)+".nc"
+            else:
+                valid_file = []
+                path = output_path+exp+"_ens0"+str(ens)+"_noOBC/"
+                valid_file = [filename for filename in os.listdir(path) if filename.startswith("timeseries")]
+                filepath = path+valid_file[0]
 
-    timeseries_1 = make_timeseries(var, data_1, grid, lat_range, lon_range, depth_range, time = len(time))
-    timeseries_2 = make_timeseries(var, data_2, grid, lat_range, lon_range, depth_range, time = len(time))
+            data_member = xr.open_dataset(filepath)
+            timeseries = data_member[var].values
+            #print(exp, ens, len(timeseries))
+            data[exp][ens].append(timeseries[:1548])
+    time = data_member.time.values
 
-    data = [timeseries_1, timeseries_2]    
+    xlabel = np.around(np.linspace(1920, 2101, 12),-1)
+    xlabel.astype(int)
 
-    file_out = "comparison_loc_timeseries.png"
+    if var == "sea_ice":
+        title = "max "+var
+        ylabel = "Sea ice thickness (m)"
+        smooth = False
+        linearity = True
+    else:
+        title = var
+        ylabel = "Temperature (*C)"
+        smooth = True
+        linearity = True
 
-    plot_comparison(data, var, ylabel, xlabel, time, var_name, title, file_out)
+    file_out = "timeseries_comparison_linearity_"+var+".png"
+
+    plot_comparison(var, data, experiments, ensemble, ylabel, xlabel, time, title, file_out, smooth=smooth, linearity = linearity)
     
 if __name__ == "__main__":
     main()

@@ -152,7 +152,7 @@ def append_years(n_years, start_year, filepath, filename, grid, lat_range, lon_r
         try:
             input_data = xr.open_dataset(input_file)
         except FileNotFoundError:
-            sys.exit(f"Stopped - Could not find directory {filepath}")
+            sys.exit(f"Stopped - Could not find directory {input_file}")
            
         # create timeseries
         theta = make_timeseries("THETA", input_data, grid, lat_range, lon_range, depth_range)
