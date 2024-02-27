@@ -54,7 +54,7 @@ def make_animation(fig, ax, params, plot_date, plot_name):
 
     # set colorbar limits
     low_lim = np.nanmin(params['data_plot'])
-    high_lim = 10
+    high_lim = 6
     
     # calculate the mask
     [land_mask, shelf_mask, colors] = create_mask(params['depth_plot'], params['ocean_plot'])
@@ -90,7 +90,7 @@ def make_animation(fig, ax, params, plot_date, plot_name):
     anim = animation.FuncAnimation(fig, animate, frames=len(params['time_plot']))
         
     # save and display
-    anim.save(plot_name, fps = 2)
+    anim.save(plot_name, fps = 1)
     #plt.show()
     
 def main():
@@ -98,23 +98,24 @@ def main():
     """Main function to run the program"""
     
     # check that enough arguments have been input by the user
-    if len(sys.argv) != 4:
-        sys.exit("Stopped - Incorrect number of arguements. Use python PI_animation.py <year or slice> <var> <exp>")
+    #if len(sys.argv) != 4:
+    #    sys.exit("Stopped - Incorrect number of arguements. Use python PI_animation.py <year or slice> <var> <exp>")
     
     # set the year, variable name, and experiment name    
-    year = str(sys.argv[1])
-    var = str(sys.argv[2])
-    exp = str(sys.argv[3])
+    #year = str(sys.argv[1])
+    var = "SIheff"
+    #exp = str(sys.argv[3])
     
     # run over a number of years (a slice)
-    if year == "slice":
+    #if year == "slice":
         # set the filepath and colour scheme
-        filepath = "/data/oceans_output/shelf/katner33/PIctrl_output/CUR_wind09_slice.nc"
+    #    filepath = "/data/oceans_output/shelf/katner33/PIctrl_output/CUR_wind09_slice.nc"
     
-    else:
+    #else:
          # set up the filepath
-        filepath = "/data/oceans_output/shelf/katner33/PIctrl_output/PAS_ctrl08/output/"+year+"01/MITgcm/output.nc"
-        
+    #    filepath = "/data/oceans_output/shelf/katner33/PIctrl_output/PAS_ctrl08/output/"+year+"01/MITgcm/output.nc"
+     
+    filepath = "/data/oceans_output/shelf/katner33/PIctrl_output/CTRL_seaice.nc"
     # load up the different variables
     id = nc.Dataset(filepath, 'r')
     
@@ -128,14 +129,16 @@ def main():
         print(np.nanmax(data))
         color_scheme = "PRGn_r"
     if var == "SHIfwFlx" or var == "SIheff":
-        data = id.variables[var][120:,:,:]
+        data = id.variables[var][:,:,:]
         color_scheme = "YlGnBu"
     
     # load up the parameters
-    time = id.variables["time"][120:]
+    time = id.variables["time"][:]
     lat = id.variables["YC"][:]
     lon = id.variables["XC"][:]
     depth = id.variables["Depth"][:, :]
+    filepath = "/data/oceans_output/shelf/katner33/PIctrl_output/CTRL_ens01_noOBC/output/192001/MITgcm/output.nc"
+    id = nc.Dataset(filepath, 'r')
     ocean = id.variables["maskC"][1, :, :]
 
     params = {
@@ -149,12 +152,12 @@ def main():
     }
     
     # create list of dates shown in function
-    start = datetime.datetime.strptime("01-2030", "%m-%Y")
-    end = datetime.datetime.strptime("12-2050", "%m-%Y")
+    start = datetime.datetime.strptime("01-1920", "%m-%Y")
+    end = datetime.datetime.strptime("12-1970", "%m-%Y")
     date_generated = [start + datetime.timedelta(days=x) for x in range(0, (end - start).days, 30)]
     
     # write out the file name
-    name = exp +"_cont_"+var+"_short.gif"
+    name = "CTRL_cont_"+var+"_short.gif"
     
     # pass through the figure and axes you want
     fig, ax = plt.subplots(figsize=(8,6))
