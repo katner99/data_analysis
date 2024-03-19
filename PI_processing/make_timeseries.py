@@ -31,7 +31,7 @@ def main():
         if int(ens_member) > 5:
             filepath = output_path + "PAS_LENS00" + str(ens_member) + "_noOBC/"
         else:
-            filepath = lens_path + "PAS_LENS00" + str(ens_member) + "_noOBC/"
+            filepath = lens_path + "PAS_LENS00" + str(ens_member) + "_O/"
     else:
         filepath = output_path + experiment + "_ens0" + str(ens_member) + "_OBC/"
 
@@ -133,46 +133,46 @@ def main():
         months_to_skip = (int(start_date[:4]) - 1920) * 12
 
         # Add more variables (theta, salt, sea_ice) to the existing dataset
-        [theta, salt, seaice, theta_c, theta_s, theta_a] = append_years(
+        [theta_cont_shelf, theta_pig, theta_abbot, theta_dotson, theta_shelf_edge, salt_cont_shelf, seaice] = append_years(
             n_years,
             start_year,
             filepath_years,
-            filename,
             grid,
-            lat_range,
-            lon_range,
             depth_range,
         )
 
         time = pd.date_range(
-            start=str(start_date[:4]) + "-01-01", periods=len(theta), freq="M"
+            start=str(start_date[:4]) + "-01-01", periods=len(theta_cont_shelf), freq="M"
         )
 
         # Create the xarray dataset
         dataset_new = xr.Dataset(
             {
-                "theta": (["time"], theta),
-                "salt": (["time"], salt),
+                "theta": (["time"], theta_cont_shelf),
+                "theta_pig": (["time"], theta_pig),
+                "theta_abbot": (["time"], theta_abbot),
+                "theta_dotson": (["time"], theta_dotson),
+                "theta_shelf_edge": (["time"], theta_shelf_edge),
+                "salt": (["time"], salt_cont_shelf),
                 "sea_ice": (["time"], seaice),
-                "theta_c": (["time"], theta_c),
-                "theta_s": (["time"], theta_s),
-                "theta_a": (["time"], theta_a),
             },
             coords={
                 "time": time,
             },
-        )
+        )        
 
         combined_data = []
         # Concatenate the new data for each variable along the time dimension
         variables_to_concat = [
             "theta",
+            "theta_pig",
+            "theta_abbot",
+            "theta_dotson",
+            "theta_shelf_edge",
             "salt",
             "sea_ice",
-            "theta_c",
-            "theta_s",
-            "theta_a",
         ]
+        
         for variable in variables_to_concat:
             existing_data = dataset_old[variable]
             new_data = dataset_new[variable]
@@ -184,11 +184,12 @@ def main():
         dataset = xr.Dataset(
             {
                 "theta": (["time"], combined_data[0]),
-                "salt": (["time"], combined_data[1]),
-                "sea_ice": (["time"], combined_data[2]),
-                "theta_c": (["time"], combined_data[3]),
-                "theta_s": (["time"], combined_data[4]),
-                "theta_a": (["time"], combined_data[5]),
+                "theta_pig": (["time"], combined_data[1]),
+                "theta_abbot": (["time"], combined_data[2]),
+                "theta_dotson": (["time"], combined_data[3]),
+                "theta_shelf_edge": (["time"], combined_data[4]),
+                "salt": (["time"], combined_data[5]),
+                "sea_ice": (["time"], combined_data[6]),
             },
             coords={
                 "time": time,
@@ -200,66 +201,5 @@ def main():
     # Save the dataset to a NetCDF file
     dataset.to_netcdf(output_file)
 
-def test():
-    # ask for the ensemble member and experiment
-    experiment = "WIND"
-    ens_member = 1
-
-    filepath = output_path + experiment + "_ens0" + str(ens_member) + "_noOBC/"
-
-    start_date = "192001"
-    filepath_years = filepath + "/output/"
-    n_years = 3
-
-    # Set up a new xarray dataset with the required dimensions (replace this with your data)
-    # set up grid
-    grid = Grid(grid_filepath)
-    grid_file = xr.open_dataset(grid_filepath, decode_times=False)
-
-    # set lat, lon, and depth range
-    depth_range = [
-        find_nearest(grid_file.Z.values, -200),
-        find_nearest(grid_file.Z.values, -700),
-    ]
-    lon_range = [
-        find_nearest(grid_file.XC.values, 250),
-        find_nearest(grid_file.XC.values, 260),
-    ]
-    lat_range = [
-        find_nearest(grid_file.YC.values, -76),
-        find_nearest(grid_file.YC.values, -72),
-    ]
-
-    # set up output file
-    filename = "output.nc"
-    start_year = int(start_date[:4])
-    end_year = start_year + n_years
-    
-    output_file = "test_2.nc"
-
-    [theta, salt, seaice] = append_years(
-        n_years,
-        start_year,
-        filepath_years,
-        grid,
-        lat_range,
-        lon_range,
-        depth_range,
-    )
-    time = pd.date_range(start="1920-01-01", periods=len(theta), freq="M")
-
-    # Create the xarray dataset
-    dataset = xr.Dataset(
-        {
-            "theta": (["time"], theta),
-            "salt": (["time"], salt),
-            "sea_ice": (["time"], seaice),
-        },
-        coords={
-            "time": time,
-        },
-    )
-
-    dataset.to_netcdf(output_file)
 if __name__ == "__main__":
     main()

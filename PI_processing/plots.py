@@ -1,13 +1,9 @@
-###############################################################
-# script to produce plots to compare data between two datasets
-# created by Katherine Turner based on hovmoller.py script 
-# 23 November 2022
-###############################################################
 import matplotlib
-#matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import AxesGrid
 from matplotlib import animation
+
 from PIL import Image,ImageFilter
 import numpy as np
 import sys
@@ -18,27 +14,87 @@ import xarray as xr
 from mitgcm_python.utils import mask_land_ice
 from mitgcm_python.calculus import over_area
 from mitgcm_python.file_io import read_binary
-from funcs import interpolate_currents
+from funcs import interpolate_currents, moving_average
 
-################## AVAILABLE PLOTS #############################
-# CONTOUR PLOTS:
-# contourplots: plots a simple 2D plot
-# animate_contour: animates contour plot
-# compare_contour_plots_LATLON: compares multiple plots for temperature, salinity, and melt
-#
-# TIMESERIES:
-# make_timeseries_at_point: timesereis at a single point
-# make timeseries over area: calculates the average over the area and pots as a timeseries
-# make_interannual_timeseries: timeseries over multiple years
-# compare_timeseries_TSM: compare interannual timeseries for temperature, salinity, and melt
-#
-# OTHER PLOTS:
-# quiver_plot: maps vector fields with or without overlay
-#
-# OTHER FUNCTIONS:
-# find_nearest: finds the index with the value closest to the one wanted
+def plot_timeseries_comparison(ax, var, data, experiments, ensemble_members, plot_info):
+    """
+    This function generates a plot comparing different experiments based on the provided data and plot information.
 
-################## CONTOUR PLOTS ################################
+    Parameters:
+    - var: Variable information (not used directly in the function)
+    - data: Dictionary containing the data for different experiments
+    - experiments: List of experiment names to be compared
+    - ensemble_members: List of ensemble members
+    - plot_info: Dictionary containing plot configuration parameters including:
+      - ylabel: Label for the y-axis
+      - xlabel: Label for the x-axis
+      - time: Time information
+      - file_out: Output file name for saving the plot
+      - smooth: Smoothing factor for the data (optional, default is 0)
+      - linearity: Flag indicating whether to plot linearity (optional, default is False)
+      - warming: Flag indicating whether to adjust for warming (optional, default is False)
+      - percentage: Flag indicating whether to calculate percentage (optional, default is False)
+      - shade_range: Flag indicating whether to shade the range (optional, default is True)
+      - title: Title for the plot (optional)
+      - experiment_full: List containing full names of experiments (optional)
+
+    Returns:
+    - ax: Axis object representing the main plot
+    - all_means: List containing the means of all experiments' data
+    """
+    colors = ["dodgerblue", "purple", "forestgreen", "orangered"]
+    experiment_full = plot_info["experiment_full"]
+    all_means = []
+
+    if plot_info.get("warming", False):
+        ctrl_mean = np.nanmean([data["CTRL"][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data["CTRL"][ens]))], axis=0)
+        warming_diff = -np.nanmean(ctrl_mean) / 10
+    
+    for exp_idx, exp in enumerate(experiments):
+        experiment_mean = np.nanmean([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0) / 10
+        experiment_max = np.nanmax([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0) / 10
+        experiment_min = np.nanmin([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0) / 10
+        
+        if plot_info.get("smooth", 0) > 0:
+            smoothed_mean = moving_average(experiment_mean, plot_info["smooth"] * 12)
+            if plot_info.get("shade_range", True):
+                smoothed_max = moving_average(experiment_max, plot_info["smooth"] * 12)
+                smoothed_min = moving_average(experiment_min, plot_info["smooth"] * 12)
+        else:
+            smoothed_mean, smoothed_max, smoothed_min = experiment_mean, experiment_max, experiment_min
+        
+        if plot_info.get("warming", False):
+            smoothed_mean += warming_diff
+            smoothed_max += warming_diff
+            smoothed_min += warming_diff
+        
+        ax.plot(smoothed_mean, color=colors[exp_idx], label=experiment_full[exp_idx], alpha=1)
+        
+        if plot_info.get("shade_range", True):
+            ax.fill_between(range(len(smoothed_min)), smoothed_min, smoothed_max, color=colors[exp_idx], alpha=0.3)
+        
+        all_means.append(experiment_mean[:])
+
+    if plot_info.get("linearity", False) or plot_info.get("percentage", False):
+        linearity = moving_average(all_means[3] + all_means[2] - all_means[0] - all_means[1], 12 * plot_info.get("smooth", 0))
+        ax.plot(linearity, color="black", label="linearity")
+        ax.axhline(0, color='grey')
+
+    ax.set_ylabel(plot_info['ylabel'], fontsize=14)
+    ax.set_xticks(np.arange(6 * plot_info.get("smooth", 0), plot_info['time'] - (6 * plot_info.get("smooth", 0)), 120))
+    ax.set_xticklabels(plot_info['xlabel'].astype(str), rotation=45)
+    ax.set_xlim(plot_info['x_lim'])
+    ax.set_title(plot_info.get("title"))
+
+    if plot_info.get("warming", False):
+        ax.set_ylim([-1.6, 1.6])
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    ax.legend()
+    ax.grid(alpha=0.8)
+
+    return ax, all_means
+
 
 def create_mask (depth, ice_mask):
     land_mask = np.zeros(np.shape(depth))

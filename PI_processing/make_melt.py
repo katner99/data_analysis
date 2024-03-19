@@ -7,7 +7,7 @@ from funcs import find_nearest, find_years
 from mitgcm_python.grid import Grid
 from directories_and_paths import *
 from config_options import *
-from calcs import append_transport
+from calcs import append_melt
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
         sys.exit(f"Stopped - Could not find directory {filepath}")
 
     if start_date is None:
-        prev_timeseries = [filename for filename in os.listdir(filepath) if filename.startswith("transport")]
+        prev_timeseries = [filename for filename in os.listdir(filepath) if filename.startswith("melt")]
         if not prev_timeseries:
             print("No previous transport timeseries detected")
         else:
@@ -59,25 +59,21 @@ def main():
     end_year = start_year + n_years
 
     if experiment == "LENS" and int(ens_member) < 6:
-        output_file = f"{output_path}transport{str(end_year)}_experiment{ens_member}.nc"
+        output_file = f"{output_path}melt{str(end_year)}_experiment{ens_member}.nc"
     else:
-        output_file = f"{filepath}transport{str(end_year)}.nc"
+        output_file = f"{filepath}melt{str(end_year)}.nc"
 
     if start_date == "192001":
         print(f"First year in the dataset. Creating new timeseries.")
 
-        lat_range = lat_range_73
-        lon_range = lon_range_73
+        melt = append_melt(n_years, start_year, filepath, grid)
 
-        [transport, transport_south] = append_transport(n_years, start_year, filepath, grid, lat_range, lon_range)
-
-        time = pd.date_range(start="1920-01-01", periods=len(transport), freq="M")
+        time = pd.date_range(start="1920-01-01", periods=len(melt), freq="Y")
 
         # Create the xarray dataset
         dataset = xr.Dataset(
             {
-                "transport": (["time"], transport),
-                "transport_south": (["time"], transport_south),
+                "melt": (["time"], melt),
             },
             coords={
                 "time": time,

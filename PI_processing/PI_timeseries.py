@@ -12,7 +12,6 @@ import scipy.stats
 
 from directories_and_paths import *
 
-
 def plot_timeseries(
     ax,
     time,
@@ -47,6 +46,8 @@ def plot_comparison(
     linearity=False,
     warming=False,
     percentage=False,
+    shade_range=True,
+    title = None,
 ):
     fig, ax = plt.subplots(figsize=(12, 5))
     colors = ["dodgerblue", "purple", "forestgreen", "orangered"]
@@ -54,8 +55,8 @@ def plot_comparison(
     all_means = []
 
     experiment_full = [
-        "wind forcing",
-        "thermodynamic f.",
+        "climatolology",
+        "transient",
         "pre-industrial control",
         "RCP 8.5",
     ]
@@ -66,14 +67,21 @@ def plot_comparison(
     
     for exp_idx, exp in enumerate(experiments):
 
-        experiment_mean = np.nanmean([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0)
-        experiment_max = np.nanmax([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0)
-        experiment_min = np.nanmin([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0)
+        experiment_mean = np.nanmean([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0)/10
+        experiment_max = np.nanmax([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0)/10
+        experiment_min = np.nanmin([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0)/10
         
         if smooth > 0:
+            print(np.shape(experiment_mean))
             smoothed_mean = moving_average(experiment_mean, smooth * 12)
-            smoothed_max = moving_average(experiment_max, smooth * 12)
-            smoothed_min = moving_average(experiment_min, smooth * 12)
+            if shade_range:
+                smoothed_max = moving_average(experiment_max, smooth * 12)
+                smoothed_min = moving_average(experiment_min, smooth * 12)
+            else:
+                for ens in ensemble_members:
+                    timeseries = np.transpose(np.array(data[exp][ens][:]))
+                    plot_timeseries(ax, time, timeseries, colors[exp_idx], "-", alpha = 0.2)
+            
         else:
             smoothed_mean = experiment_mean
             smoothed_max = experiment_max
@@ -92,13 +100,14 @@ def plot_comparison(
             label=experiment_full[exp_idx],
             alpha=1,
         )
-        ax.fill_between(
-            range(len(smoothed_min)),
-            smoothed_min,
-            smoothed_max,
-            color=colors[exp_idx],
-            alpha=0.3,
-        )
+        if shade_range:
+            ax.fill_between(
+                range(len(smoothed_min)),
+                smoothed_min,
+                smoothed_max,
+                color=colors[exp_idx],
+                alpha=0.3,
+            )
         all_means.append(experiment_mean[:])
 
     if linearity == True:
@@ -120,11 +129,13 @@ def plot_comparison(
         ax2.set_ylim([-100, 100])
         ax2.axhline(0, color='grey')
     
+    xlabel = np.array(xlabel, dtype="int")
     ax.set_ylabel(ylabel, fontsize=14)
     ax.set_xticks(np.arange(6*smooth, x_values-(6*smooth), 120))
     ax.set_xticklabels(xlabel.astype(str), rotation=45)
-    ax.set_xlim([6*smooth, x_values-(6*smooth)])
-    ax.set_title(f"{var} between 200 - 700m")
+    #ax.set_xlim([6*smooth, x_values-(6*smooth)])
+    ax.set_xlim([0, (2090-1920)*12])
+    ax.set_title(title)
     if percentage:
         ax.legend()
         ax2.grid(alpha=0.8)
@@ -136,7 +147,57 @@ def plot_comparison(
         ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
         ax.grid(alpha=0.8)
 
-    fig.savefig(file_out, transparent=True)
+    fig.savefig(file_out, transparent=False)
+    plt.show()
+
+def plot_minus(
+    var,
+    data,
+    experiments,
+    ensemble_members,
+    ylabel,
+    xlabel,
+    time,
+    file_out,
+    smooth=0,
+    linearity=False,
+    warming=False,
+    percentage=False,
+    shade_range=False,
+):
+    fig, ax = plt.subplots(figsize=(12, 5))
+    colors = ["dodgerblue", "purple", "forestgreen", "orangered"]
+    experiment_info = {}  # Dictionary to store experiment information
+    all_means = []
+
+    experiment_full = [
+        "noOBC",
+        "OBC",
+    ]
+                    
+    for ens in ensemble_members:
+        timeseries = np.transpose(np.array(data[experiments[0]][ens][:])) - np.transpose(np.array(data[experiments[1]][ens][:]))
+        plot_timeseries(ax, time, timeseries, colors[0], "-", alpha = 0.2)
+
+    exp = experiments[0]
+    experiment_mean_1 = np.nanmean([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0)
+    exp = experiments[1]
+    experiment_mean_2 = np.nanmean([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0)
+
+    ax.plot(
+        experiment_mean_1 - experiment_mean_2,
+        color=colors[0],
+        alpha=1,
+    )
+
+    ax.axhline(0, color='grey')
+    ax.set_ylabel(ylabel, fontsize=14)
+    ax.set_xticks(np.arange(0, time, 120))
+    ax.set_xticklabels(xlabel.astype(str), rotation=45)
+    ax.set_xlim([0, (2030-1920)*12])
+    ax.set_title(f"difference {var} between {experiments[0]} and {experiments[1]}")
+    ax.grid(alpha=0.8)
+    fig.savefig(file_out, transparent=False)
     plt.show()
 
 
@@ -195,23 +256,12 @@ def plot_ensemble(
         x_values = time
 
     exp = experiments
-    # shortest_length = np.min([len(data[exp][ens][ts_idx]) for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))])
-    # experiment_mean = np.nanmean([data[exp][ens][ts_idx][:] for ens in ensemble_members for ts_idx in range(len(data[exp][ens]))], axis=0)
-    # smoothed_mean = moving_average(experiment_mean, 2*12)
-    # print(type(smoothed_mean))
     x_values = range(2172)
-    # ax.plot(smoothed_mean, color='k', label="mean", alpha = 1)
-
-    # res = scipy.stats.linregress(range(len(smoothed_mean[2*12:])), smoothed_mean[2*12:])
-    # print(res.slope, res.pvalue)
-    # ax.plot(res.intercept + res.slope*smoothed_mean,'r', label='fitted line')
-    # ax.legend()
     ax.set_ylabel(ylabel, fontsize=14)
     ax.set_xticks(np.arange(0, len(x_values), 120))
     ax.set_xticklabels(xlabel.astype(str), rotation=45)
     ax.set_xlim([0, len(x_values)])
     ax.grid(alpha=0.8)
-    # ax.set_title("slope: "+str(np.round(res.slope,2))+" p-value: "+str( np.round(res.pvalue)))
     ax.set_title(title)
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
@@ -222,11 +272,13 @@ def plot_ensemble(
     #fig.savefig(file_out)
     plt.show()
 
-def comparison():
+def simulation_comparison():
     # set variables for the function
-    var = "transport_south"
+    var = "theta"
     if var in ["transport", "transport_south"]:
         origin = "transport"
+    elif var == "melt":
+        origin = "melt"
     else:
         origin = "timeseries"
 
@@ -235,7 +287,7 @@ def comparison():
 
     # Define the output structure
     data = {exp: {ens: [] for ens in ensemble} for exp in experiments}
-    max_len = 181 * 12
+    max_len = 181 
 
     for exp in experiments:
         timeseries = []
@@ -288,6 +340,13 @@ def comparison():
         linearity = True
         percentage = False
         warming = False
+    elif var == "melt":
+        title = "ice shelf basal melt rate"
+        ylabel = "melt (m.w.e./yr)"
+        smooth = 0
+        linearity = False
+        percentage = False
+        warming = False
     else:
         title = var
         ylabel = "Temperature (C)"
@@ -299,14 +358,14 @@ def comparison():
     start_year = 1920 + (smooth/2)
     end_year = 2101 - (smooth/2)
     xlabel = np.arange(start_year, end_year, 10)
-    time = 12 * 181
+    time = 181
 
     if warming:
         file_out = "timeseries_warming_" + var + "_"+str(smooth)+".png"
     elif percentage:
         file_out = "timeseries_percentage_" + var + "_"+str(smooth)+".png"
     else:
-        file_out = "timeseries_" + exp + "_" + var + ".png"
+        file_out = "timeseries_" + var + ".png"
 
     # function to plot the timeseries
     plot_comparison(
@@ -322,29 +381,87 @@ def comparison():
         linearity=linearity,
         warming=warming,
         percentage=percentage,
+        title=title,
     )
 
     # plot_ensemble(var, data, exp, ensemble, ylabel, xlabel, time, title, file_out, smooth=smooth, linearity = linearity, percentage = percentage)
 
 def one_on_one():
-    filepath_OBC = f"{output_path}TEMP_ens01_OBC/"
-    data_OBC = xr.open_dataset(f"{filepath_OBC}timeseries2006.nc", decode_times = False)
+    var = "theta_shelf_edge"
+    origin = "timeseries"
 
-    filepath_noOBC = f"{output_path}TEMP_ens01_noOBC/"
-    data_noOBC = xr.open_dataset(f"{filepath_noOBC}timeseries2101.nc", decode_times = False)
+    experiments = ["noOBC", "OBC"]
+    ensemble = [1, 2, 3, 4, 5]
 
-    variables = ["theta", "theta_pig", "theta_abbot", "theta_dotson", "theta_shelf_edge", "salt"]
+    # Define the output structure
+    data = {exp: {ens: [] for ens in ensemble} for exp in experiments}
+    max_len = 181 * 12
 
-    fig, axs = plt.subplots(nrows=6, ncols=1, gridspec_kw={"hspace": 0.5, "wspace": 0.4}, figsize=(10, 20))
+    for exp in experiments:
+        timeseries = []
+        for ens in ensemble:
+            valid_file = []
+            path = f"{output_path}TEMP_ens0{ens}_{exp}/"
+            valid_file = [
+                filename
+                for filename in os.listdir(path)
+                if filename.startswith(origin)
+            ]
+            filepath = path + valid_file[0]
 
-    for var_idx, var in enumerate(variables):
-        axs[var_idx].plot(data_OBC[var].values, color = "blue", label = "transient")
-        axs[var_idx].plot(data_noOBC[var].values, color = "red", label = "climatology")
-        axs[var_idx].set_title(f"{var}")
-        axs[var_idx].legend()
+            data_member = xr.open_dataset(filepath)
+            timeseries = data_member[var].values
+            if len(timeseries) < max_len:
+                timeseries = np.pad(
+                    timeseries, (0, max_len - len(timeseries)), constant_values=np.nan
+                )
+            print(exp, ens, np.shape(timeseries))
+            data[exp][ens].append(timeseries)
 
-    fig.savefig("initial_comparison_timeseries.png")
-    plt.show()
+    title = var
+    ylabel = "Temperature (C)"
+    smooth = 0
+    linearity = False
+    percentage = False
+    warming = False
+
+    start_year = 1920 + (smooth/2)
+    end_year = 2101 - (smooth/2)
+    xlabel = np.arange(start_year, end_year, 10)
+    time = 12 * 181
+
+    file_out = f"timeseries_difference_OBC_{var}.png"
+    
+    plot_comparison(
+        var,
+        data,
+        experiments,
+        ensemble,
+        ylabel,
+        xlabel,
+        time,
+        file_out,
+        smooth,
+        linearity,
+        warming,
+        percentage,
+        title=f"difference between simulations {var}",
+    )
+
+   # plot_minus(
+   #     var,
+   #     data,
+   #     experiments,
+   #     ensemble,
+   #     ylabel,
+   #     xlabel,
+   #     time,
+   #     file_out,
+   #     smooth=smooth,
+   #     linearity=linearity,
+   #     warming=warming,
+   #     percentage=percentage,
+   # )
 
 if __name__ == "__main__":
     one_on_one()

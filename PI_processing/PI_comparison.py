@@ -12,7 +12,7 @@ import sys
 import numpy as np
 import xarray as xr
 
-def comparison(graph_params, data, X, Y, color_scheme, land_mask, colors, mask, experiment, title, file_out, save=True, show=False, linearity=False, residual = None):
+def comparison(graph_params, data, X, Y, color_scheme, land_mask, colors, mask, experiment, title, file_out, save=True, show=False, linearity=False, residual = None, ice_shelf = False):
     total = len(data)
     
     fig, axs = plt.subplots(nrows=total, ncols=total, gridspec_kw={"hspace": 0.5, "wspace": 0.4}, figsize=graph_params["figsize"])
@@ -23,10 +23,13 @@ def comparison(graph_params, data, X, Y, color_scheme, land_mask, colors, mask, 
 
     if linearity:
         position = total-1
-        cs = axs[position].contourf(X, Y, residual, cmap= "PRGn_r", extend="both", levels=np.linspace(-50, 50, 25))
+        cs = axs[position].contourf(X, Y, residual, cmap= "PRGn_r", extend="both", levels=np.linspace(-1, 1, 25))
         axs[position].contourf(X, Y, land_mask, cmap=matplotlib.colors.ListedColormap(colors))
         axs[position].contour(X, Y, mask, 2, cmap="Greys", linestyles="dashed")
-        fig.colorbar(cs, ax=axs[position], ticks=np.arange(-50, 50.1, 25))
+        if ice_shelf:
+            axs[position].set_ylim([-75.6, -70])
+            axs[position].set_xlim([235, 265])
+        fig.colorbar(cs, ax=axs[position], ticks=np.arange(-1, 1.1, 1))
         axs[position].set_title("Residual", fontsize=graph_params["font_size"], weight="bold")
     
     for i in range(total):
@@ -37,7 +40,10 @@ def comparison(graph_params, data, X, Y, color_scheme, land_mask, colors, mask, 
         cs = axs[diagonal].contourf(X, Y, data[i], cmap=color_scheme, extend="both", levels=np.linspace(graph_params["low_val"], graph_params["high_val"], graph_params["step"]))
         axs[diagonal].contourf(X, Y, land_mask, cmap=matplotlib.colors.ListedColormap(colors))
         axs[diagonal].contour(X, Y, mask, 2, cmap="Greys", linestyles="dashed")
-        ticks=np.arange(graph_params["low_val"], graph_params["high_val"]+0.1, 50)
+        if ice_shelf:
+            axs[diagonal].set_ylim([-75.6, -70])
+            axs[diagonal].set_xlim([235, 265])
+        ticks=np.arange(graph_params["low_val"], graph_params["high_val"]+0.1, 2.5)
         cbar = fig.colorbar(cs, ax=axs[diagonal])
         cbar.set_ticks(ticks)
         axs[diagonal].set_title(experiment[i], fontsize=graph_params["font_size"], weight="bold")
@@ -50,6 +56,9 @@ def comparison(graph_params, data, X, Y, color_scheme, land_mask, colors, mask, 
             axs[anomaly].contourf(X, Y, land_mask, cmap=matplotlib.colors.ListedColormap(colors))
             axs[anomaly].contour(X, Y, mask, 2, cmap="Greys", linestyles="dashed")
             ticks=graph_params["ticks_anom"]
+            if ice_shelf:
+                axs[anomaly].set_ylim([-75.6, -70])
+                axs[anomaly].set_xlim([235, 265])
             cbar = fig.colorbar(cs, ax=axs[anomaly])
             cbar.set_ticks(ticks)
             axs[anomaly].set_title(experiment[j]+" - "+experiment[i], fontsize=graph_params["font_size"])
@@ -113,14 +122,15 @@ def main():
 
     # sea ice tickness
     elif var in ["SIheff", "oceFWflx", "SIfwmelt", "SIfwfrz", "EXFvwind", "oceQnet"]:
-        data = [read_variable(input, var, grid)*3600*24*30 for input in input_data]
+        data = [read_variable(input, var, grid)*3600*24*365/1000 for input in input_data]
         #data =3600*24*365
         #color_scheme = "YlGnBu_r"
         color_scheme = "PRGn_r"
-        anom = 50
-        min_val = -100
-        max_val = 100
+        anom = 1
+        min_val = -5
+        max_val = 5
         #color_scheme = "seismic"
+        title = f"Freshwater fluxes m/yr {period}"
 
     # salinity
     elif var == "SALT":
@@ -131,6 +141,13 @@ def main():
         min_val = int(np.min(data[0]))
         max_val =  int(np.max(data[0]))+1
         
+    elif var == "SHIfwFlx":
+        data = [-read_variable(input, var, grid)*3600*24*30*10**(-3) for input in input_data]
+        color_scheme = "rainbow"
+        anom = 25
+        min_val = 0
+        max_val = 76
+        title = f"ice shelf basal melt rate ({period}) (m.w.e./yr)"
 
     # set mask
     [land_mask, mask, colors] = create_mask(depth, ice_mask)
@@ -147,10 +164,10 @@ def main():
         "step": 15,
         "low_val_anom": -anom,
         "high_val_anom": anom,
-        "ticks_anom": np.arange(-anom, anom +0.2, 25)
+        "ticks_anom": np.arange(-anom, anom +0.2, 0.5)
     }
 
-    title = "monthly net surface fresh-water flux into the ocean (kg/m^s/month) "+period
+    
     file_out = "mega_comparison"+var+"_"+period+"_test.png"
 
     print(np.shape(data[1]))
@@ -159,7 +176,7 @@ def main():
 
     print(np.max(residual), np.min(residual))
 
-    comparison(graph_params, data, X, Y, color_scheme, land_mask, colors, mask, experiment, title, file_out, save, show, linearity = True, residual = residual)
+    comparison(graph_params, data, X, Y, color_scheme, land_mask, colors, mask, experiment, title, file_out, save, show, linearity = True, residual = residual, ice_shelf = False)
             
 if __name__ == '__main__':
     main() # run the program
