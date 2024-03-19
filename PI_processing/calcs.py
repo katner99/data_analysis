@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import xarray as xr
 from mitgcm_python.utils import add_time_dim
