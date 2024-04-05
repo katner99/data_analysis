@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def contour_func(fig, ax, data, set_up, graph_params, hide_ticks=True):
+def contour_func(fig, ax, data, set_up, graph_params, hide_ticks_x=True, hide_ticks_y=True):
     """
     Generates a contour plot with specified data and settings.
 
@@ -41,18 +41,13 @@ def contour_func(fig, ax, data, set_up, graph_params, hide_ticks=True):
     ax.contour(
         set_up["X"], set_up["Y"], set_up["mask"], 2, cmap="Greys", linestyles="dashed"
     )
-    ticks = np.arange(
-        graph_params["low_val"],
-        graph_params["high_val"] + 0.1,
-        graph_params["interval"],
-    )
-    cbar = fig.colorbar(cs, ax=ax, aspect=40)
-    cbar.set_ticks(ticks)
-    if hide_ticks:
+    
+    if hide_ticks_x:
         ax.get_xaxis().set_visible(False)
+    if hide_ticks_y:
         ax.get_yaxis().set_visible(False)
     ax.set_aspect("auto", adjustable="box")
-    return ax
+    return cs
 
 
 def quiver_func(ax, u, v, lat, lon, chunk):
