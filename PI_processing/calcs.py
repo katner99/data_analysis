@@ -15,9 +15,9 @@ def calc_transport(input_data, grid, lat_range, lon_range, option="total"):
     dX = add_time_dim(dX, 12)
     dZ = add_time_dim(dZ, 12)
     vel = input_data.VVEL.values[:12, :, lat_range, lon_range[0] : lon_range[1]]
-    hfac = grid.hfac[:, lat_range, lon_range[0] : lon_range[1]] == 0
-    hfac = add_time_dim(hfac, 12)
-    VEL = np.ma.masked_where(hfac, vel)
+    mask = grid.hfac[:, lat_range, lon_range[0] : lon_range[1]] == 0
+    mask = add_time_dim(mask, 12)
+    VEL = np.ma.masked_where(mask, vel)
     if option == "south":
         VEL = np.ma.masked_where(VEL > 0, VEL)
     return sv * np.sum(-VEL * dX * dZ, axis=(-2, -1))
@@ -89,3 +89,25 @@ def append_melt(n_years, start_year, filepath, grid):
         melt = np.ma.append(melt, melt_temp)
 
     return melt
+
+def moving_average(a, n=3):
+    """calculate a centred moving average"""
+    if n < 2:
+        raise ValueError(
+            "Window size (n) must be at least 2 for a centered moving average."
+        )
+
+    data = np.empty_like(a, dtype=float)
+    data.fill(np.nan)
+
+    # Calculate the cumulative sum
+    cumsum = np.cumsum(np.insert(a, 0, 0))
+
+    # Calculate the centered moving average
+    half_n = n // 2
+    if n % 2 == 0:
+        data[half_n - 1 : -half_n] = (cumsum[n:] - cumsum[:-n]) / n
+    else:
+        data[half_n:-half_n] = (cumsum[n:] - cumsum[:-n]) / n
+
+    return data
