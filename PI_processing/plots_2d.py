@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr 
 from directories_and_paths import output_path
 
-def contour_func(fig, ax, data, set_up, graph_params, hide_ticks_x=True, hide_ticks_y=True):
+def contour_func(ax, data, set_up, graph_params, hide_ticks_x=True, hide_ticks_y=True):
     """
     Generates a contour plot with specified data and settings.
 
@@ -51,7 +51,7 @@ def contour_func(fig, ax, data, set_up, graph_params, hide_ticks_x=True, hide_ti
     return cs
 
 
-def quiver_func(ax, u, v, lat, lon, chunk):
+def quiver_func(ax, u, v, lat, lon, chunk, key = True):
     """
     Plots a quiver plot representing vector fields over specified coordinates.
 
@@ -74,11 +74,12 @@ def quiver_func(ax, u, v, lat, lon, chunk):
         scale=1.1,
         color="indigo",
     )
-    ax.quiverkey(
-        q, 0.94, 0.95, 0.1, r"$0.1 \frac{m}{s}$", labelpos="E", coordinates="figure"
-    )
+    if key:
+        ax.quiverkey(
+            q, 0.94, 0.95, 0.1, r"$0.1 \frac{m}{s}$", labelpos="E", coordinates="figure"
+        )
 
-def trend_quiver_func(ax, u, v, time, set_up, timescale = 1200):
+def trend_quiver_func(ax, u, v, time, set_up, timescale = 1200, key = True):
     import scipy.stats
     slope_u = np.empty(np.shape(u[0,...]))
     slope_v = np.empty(np.shape(v[0,...]))
@@ -93,5 +94,5 @@ def trend_quiver_func(ax, u, v, time, set_up, timescale = 1200):
                 q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='coral', width=0.005)
             else:
                 q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon],slope_u[lat, lon], slope_v[lat, lon], color='lightgray', width=0.005)
-
-    ax.quiverkey(q, 0.935, 0.5, 3, r'$3 \frac{m}{s}cent.$', labelpos='E', coordinates='figure')
+    if key:
+        ax.quiverkey(q, 0.935, 0.5, 3, r'$3 \frac{m}{s}cent.$', labelpos='E', coordinates='figure')

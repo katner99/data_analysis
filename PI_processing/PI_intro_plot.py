@@ -8,6 +8,7 @@ from directories_and_paths import output_path, grid_filepath
 from plots import read_mask, read_u_and_v
 from funcs import find_nearest, read_variable
 from mitgcm_python.grid import Grid
+from mitgcm_python.plot_utils.labels import lat_label, lon_label
 
 matplotlib.use("TkAgg")
 
@@ -63,8 +64,8 @@ def read_winds(filename):
     }
     return uwinds, vwinds, time, graph_params
 
-def plot_contour(fig, ax, data, set_up, graph_params, title, hide_ticks_x = True, hide_ticks_y = True):
-    cs = contour_func(fig, ax, data, set_up, graph_params, hide_ticks_x, hide_ticks_y)
+def plot_contour(ax, data, set_up, graph_params, title, hide_ticks_x = True, hide_ticks_y = True):
+    cs = contour_func(ax, data, set_up, graph_params, hide_ticks_x, hide_ticks_y)
     ax.set_xlim([230, 260])
     ax.set_ylim([-75.5, -68])
     ax.text(
@@ -75,6 +76,23 @@ def plot_contour(fig, ax, data, set_up, graph_params, title, hide_ticks_x = True
         transform=ax.transAxes,
         bbox=dict(facecolor="white", alpha=0.9),
     )
+    if hide_ticks_x == False:
+        ax.locator_params(axis = 'x', nbins=6)
+        lon_ticks = ax.get_xticks() - 360
+        lon_labels = []
+        for x in lon_ticks:
+            lon_labels.append(lon_label(x,2))
+        ax.set_xticklabels(lon_labels)
+        ax.tick_params(axis='x', labelrotation=45)
+
+    if hide_ticks_y == False:
+        ax.locator_params(axis = 'y', nbins=5)
+        lat_ticks = ax.get_yticks()
+        lat_labels = []
+        for y in lat_ticks:
+            lat_labels.append(lat_label(y,2))
+        ax.set_yticklabels(lat_labels)
+
     return cs
 
 def plot_intro(ctrl_temp, lens_temp, graph_params_temp, speed, u, v, set_up, graph_params_vel, chunk, graph_params_bathy, uwind, vwind, time):
@@ -82,10 +100,10 @@ def plot_intro(ctrl_temp, lens_temp, graph_params_temp, speed, u, v, set_up, gra
     plt.subplots_adjust(wspace=0.05, hspace=0.05)
     axs = axs.flatten()
 
-    plot_contour(fig, axs[0], ctrl_temp, set_up, graph_params_temp, "Pre-industrial temperature (degC)", hide_ticks_y=False)
-    cs_vel = plot_contour(fig, axs[1], speed, set_up, graph_params_vel, "Bottom Velocity (m/s)")
-    cs_temp = plot_contour(fig, axs[2], lens_temp, set_up, graph_params_temp, "End of century temperature (degC)", hide_ticks_x=False, hide_ticks_y=False)
-    cs_bathy = plot_contour(fig, axs[3], set_up["depth"], set_up, graph_params_bathy, "Projected wind trends (m/s/century)", hide_ticks_x=False)
+    plot_contour(axs[0], ctrl_temp, set_up, graph_params_temp, "Pre-industrial temperature (degC)", hide_ticks_y=False)
+    cs_vel = plot_contour(axs[1], speed, set_up, graph_params_vel, "Bottom Velocity (m/s)")
+    cs_temp = plot_contour(axs[2], lens_temp, set_up, graph_params_temp, "End of century temperature (degC)", hide_ticks_x=False, hide_ticks_y=False)
+    cs_bathy = plot_contour(axs[3], set_up["depth"], set_up, graph_params_bathy, "Projected wind trends (m/s/century)", hide_ticks_x=False)
     
     quiver_func(axs[1], u, v, set_up["lat"], set_up["lon"], chunk)
     trend_quiver_func(axs[3], uwind, vwind, time, set_up)
@@ -107,7 +125,7 @@ def plot_intro(ctrl_temp, lens_temp, graph_params_temp, speed, u, v, set_up, gra
     cbar.set_ticks(ticks)
 
     fig.savefig("introduction_plot.png", transparent=True)
-    
+
     plt.show()
 
 def main():
