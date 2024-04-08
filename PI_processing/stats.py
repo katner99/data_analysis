@@ -32,7 +32,7 @@ def calc_pvalue(data, experiments, ensemble):
         p_value.append(test.pvalue)
     return p_value
     
-def stat_timeserie(var, data, ensemble, experiments, experiment_names, file_out = None):
+def stat_timeseries(var, data, ensemble, experiments, experiment_names, file_out = None):
     """
     Parameters:
         data: Dictionary containing experimental data.
