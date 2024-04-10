@@ -1,11 +1,10 @@
 import sys
 import os
-import numpy as np
 import xarray as xr
 import pandas as pd
-from funcs import find_nearest, find_years
+from funcs import find_years
 from mitgcm_python.grid import Grid
-from directories_and_paths import *
+from directories_and_paths import output_path, grid_filepath
 from config_options import *
 from calcs import append_melt
 
@@ -68,7 +67,7 @@ def main():
 
         melt = append_melt(n_years, start_year, filepath, grid)
 
-        time = pd.date_range(start="1920-01-01", periods=len(melt), freq="Y")
+        time = pd.date_range(start="1920-01-01", periods=len(melt), freq="M")
 
         # Create the xarray dataset
         dataset = xr.Dataset(

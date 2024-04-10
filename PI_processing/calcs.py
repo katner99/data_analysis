@@ -49,7 +49,7 @@ def append_transport(n_years, start_year, filepath, grid, lat_range, lon_range):
     return transport, transport_south
 
 
-def calc_melt(input_data, grid):
+def calc_melt(input_data, grid, lon_range, lat_range):
     """
     function to calculate the total melt over the area
 
@@ -62,12 +62,11 @@ def calc_melt(input_data, grid):
 
     """
     dA = grid.dA
-    dA = add_time_dim(dA, 12)
+    dA_cut = add_time_dim(dA, 12)[:, lat_range[0] : lat_range[1], lon_range[0] : lon_range[1]]
     melt_flux = (
-        input_data.SHIfwFlx.values[:12, ...] * 3600 * 24 * 365
-    )  # convert from seconds to years
-
-    return 10 ** (-12) * np.sum(-melt_flux * dA)
+        input_data.SHIfwFlx.values[:12, :lat_range[1], lon_range[0] : lon_range[1]] * 3600 * 24 * 365
+    )  # convert from seconds to years 
+    return 10 ** (-12) * np.sum((-melt_flux) * dA_cut, axis=(-2, -1))
 
 
 def append_melt(n_years, start_year, filepath, grid):
@@ -85,9 +84,14 @@ def append_melt(n_years, start_year, filepath, grid):
             input_data = xr.open_dataset(input_file, decode_times=False)
         except FileNotFoundError:
             sys.exit(f"Stopped - Could not find directory {input_file}")
-        melt_temp = calc_melt(input_data, grid)
-        melt = np.ma.append(melt, melt_temp)
 
+        [lat, lon] = [input_data[param].values for param in ["YC", "XC"]]
+        lon_range = [find_nearest(lon, 250), find_nearest(lon, 260)]
+        lat_range = [find_nearest(lat, -76), find_nearest(lat, -72)]
+
+        melt_temp = calc_melt(input_data, grid, lon_range, lat_range)
+        melt = np.ma.append(melt, melt_temp)
+    print(np.shape(melt))
     return melt
 
 def moving_average(a, n=3):
