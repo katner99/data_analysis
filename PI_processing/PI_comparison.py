@@ -167,7 +167,7 @@ def main():
     period = "2070-2100"
     
     # load up the file paths for the monster, needed 4
-    filepaths = [output_path + "average_" + ens + "_" + period + ".nc" for ens in ["CTRL", "LENS", "WIND", "TEMP"]]
+    filepaths = [f"{output_path}average_{ens}_{period}.nc" for ens in ["CTRL", "LENS", "WIND", "TEMP"]]
     # check if the input files exist
     for filepath in filepaths:
         try:
