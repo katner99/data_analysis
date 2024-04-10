@@ -49,7 +49,7 @@ def plot_timeseries_comparison(ax, data, experiments, ensemble_members, plot_inf
             ],
             axis=0,
         )
-        warming_diff = -np.nanmean(ctrl_mean) / 10
+        warming_diff = -np.nanmean(ctrl_mean)
 
     for exp_idx, exp in enumerate(experiments):
         experiment_mean = (
@@ -61,7 +61,6 @@ def plot_timeseries_comparison(ax, data, experiments, ensemble_members, plot_inf
                 ],
                 axis=0,
             )
-            / 10
         )
         experiment_max = (
             np.nanmax(
@@ -72,7 +71,6 @@ def plot_timeseries_comparison(ax, data, experiments, ensemble_members, plot_inf
                 ],
                 axis=0,
             )
-            / 10
         )
         experiment_min = (
             np.nanmin(
@@ -83,7 +81,6 @@ def plot_timeseries_comparison(ax, data, experiments, ensemble_members, plot_inf
                 ],
                 axis=0,
             )
-            / 10
         )
 
         if plot_info.get("smooth", 0) > 0:
