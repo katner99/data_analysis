@@ -5,11 +5,31 @@ import numpy as np
 from plots import zoom_shelf
 
 def comparison(data, set_up, graph_params, graph_params_anom, experiment, title, file_out, save=True, show=False, linearity=False, residual = None, zoom = None):
+    """
+    Generate a grid of subplots for visual comparison of multiple datasets.
+
+    Parameters:
+        data (list): A list of datasets to be plotted.
+        set_up: (object): An object containing setup information.
+        graph_params (dict): Parameters for main graphs.
+        graph_params_anom (dict): Parameters for anomaly graphs.
+        experiment (list): A list of experiment names corresponding to each dataset.
+        title (str): Title for the entire figure.
+        file_out (str): File path for saving the figure.
+        save (bool, optional): Whether to save the figure. Defaults to True.
+        show (bool, optional): Whether to display the figure. Defaults to False.
+        linearity (bool, optional): Whether to include a residual plot. Defaults to False.
+        residual: (object): An object containing residual plot data.
+        zoom: (object): An object containing zoom parameters.
+
+    Returns:
+        None
+    """
     from mitgcm_python.plot_utils.labels import lat_label, lon_label
 
     total = len(data)
     
-    fig, axs = plt.subplots(nrows=total, ncols=total, gridspec_kw={"hspace": 0.05, "wspace": 0.04}, figsize=graph_params["figsize"])
+    fig, axs = plt.subplots(nrows=total, ncols=total, gridspec_kw={"hspace": 0.05, "wspace": 0.04}, figsize=(15, 15))
     axs = axs.flatten()
 
 
@@ -73,7 +93,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
             else:
                 hide_ticks_y = True
 
-            if anomaly > (total * (total - 1)):
+            if anomaly >= (total * (total - 1)):
                 hide_ticks_x = False
             else:
                 hide_ticks_x = True
@@ -116,7 +136,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
     cbar.set_ticks(ticks)
     cbar.ax.yaxis.set_ticks_position('left')
 
-    ticks=graph_params["ticks_anom"]
+    ticks=np.arange(graph_params_anom["low_val"], graph_params_anom["high_val"]+0.1, 1)
     cbar_ax = fig.add_axes([0.05, 0.1, 0.02, 0.4])
     cbar = plt.colorbar(cs_anom, cax=cbar_ax, orientation='vertical')
     cbar.set_ticks(ticks)
