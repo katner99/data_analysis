@@ -256,6 +256,14 @@ def read_u_and_v(input_data, option="avg"):
     speed, u_plot, v_plot = prepare_vel(u, v, grid, vel_option=option)
     return speed, u_plot, v_plot
 
+def zoom_shelf(ax, zoom):
+    if zoom == "ice_shelf":
+        ax.set_ylim([-75.6, -70])
+        ax.set_xlim([235, 265])
+    elif zoom == "cont_shelf":
+        ax.set_xlim([230, 265])
+        ax.set_ylim([-75.5, -68])
+
 
 def read_mask(input_data):
     """

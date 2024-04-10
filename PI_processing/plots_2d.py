@@ -2,8 +2,155 @@ import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import numpy as np
-import xarray as xr 
-from directories_and_paths import output_path
+from plots import zoom_shelf
+
+def comparison(data, set_up, graph_params, graph_params_anom, experiment, title, file_out, save=True, show=False, linearity=False, residual = None, zoom = None):
+    """
+    Generate a grid of subplots for visual comparison of multiple datasets.
+
+    Parameters:
+        data (list): A list of datasets to be plotted.
+        set_up: (object): An object containing setup information.
+        graph_params (dict): Parameters for main graphs.
+        graph_params_anom (dict): Parameters for anomaly graphs.
+        experiment (list): A list of experiment names corresponding to each dataset.
+        title (str): Title for the entire figure.
+        file_out (str): File path for saving the figure.
+        save (bool, optional): Whether to save the figure. Defaults to True.
+        show (bool, optional): Whether to display the figure. Defaults to False.
+        linearity (bool, optional): Whether to include a residual plot. Defaults to False.
+        residual: (object): An object containing residual plot data.
+        zoom: (object): An object containing zoom parameters.
+
+    Returns:
+        None
+    """
+    from mitgcm_python.plot_utils.labels import lat_label, lon_label
+
+    total = len(data)
+    
+    fig, axs = plt.subplots(nrows=total, ncols=total, gridspec_kw={"hspace": 0.05, "wspace": 0.04}, figsize=(15, 15))
+    axs = axs.flatten()
+
+
+    if linearity:
+        position = total-1
+        cs = contour_func(axs[position], residual, set_up, graph_params_anom)
+        zoom_shelf(axs[position], zoom)
+
+        fig.colorbar(cs, ax=axs[position], ticks=np.arange(-1, 1.1, 1))
+        axs[position].set_title("Residual", fontsize=graph_params["font_size"], weight="bold")
+
+        lon_ticks = axs[position].get_xticks() - 360
+        lon_labels = []
+        for x in lon_ticks:
+            lon_labels.append(lon_label(x,2))
+        axs[position].set_xticklabels(lon_labels)
+        axs[position].tick_params(axis='x', labelrotation=45)
+        
+        lat_ticks = axs[position].get_yticks()
+        lat_labels = []
+        for y in lat_ticks:
+            lat_labels.append(lat_label(y,2))
+        axs[position].set_yticklabels(lat_labels)
+    
+    for i in range(total):
+        # MAIN GRAPH
+        diagonal = (total+1)*i
+        if diagonal == 0:
+            hide_ticks_y = False
+        else:
+            hide_ticks_y = True
+        
+        if diagonal == ((total*total)-1):
+            hide_ticks_x = False
+        else:
+            hide_ticks_x = True
+
+        cs_diag = contour_func(axs[diagonal], data[i], set_up, graph_params, hide_ticks_x, hide_ticks_y)
+        zoom_shelf(axs[diagonal], zoom)
+        axs[diagonal].set_title(experiment[i], fontsize=graph_params["font_size"], weight="bold")
+        
+        if hide_ticks_y == False:
+            for y in lat_ticks:
+                lat_labels.append(lat_label(y,2))
+            axs[diagonal].set_yticklabels(lat_labels)
+
+        if hide_ticks_x == False:
+            lon_ticks = axs[diagonal].get_xticks() - 360
+            lon_labels = []
+            for x in lon_ticks:
+                lon_labels.append(lon_label(x,2))
+            axs[diagonal].set_xticklabels(lon_labels)
+            axs[diagonal].tick_params(axis='x', labelrotation=45)
+
+        # ANOMALY
+        for j in range(i+1, total):
+            anomaly = (total*j)+i
+
+            if anomaly % total == 0:
+                hide_ticks_y = False
+            else:
+                hide_ticks_y = True
+
+            if anomaly >= (total * (total - 1)):
+                hide_ticks_x = False
+            else:
+                hide_ticks_x = True
+
+            cs_anom = contour_func(axs[anomaly], data[j] - data[i], set_up, graph_params_anom, hide_ticks_x, hide_ticks_y)
+            
+            zoom_shelf(axs[anomaly], zoom)
+            
+            if anomaly % total == 0:
+                lat_ticks = axs[anomaly].get_yticks()
+                lat_labels = []
+                for y in lat_ticks:
+                    lat_labels.append(lat_label(y,2))
+                axs[anomaly].set_yticklabels(lat_labels)
+            
+            if hide_ticks_x == False:
+                lon_ticks = axs[anomaly].get_xticks() - 360
+                lon_labels = []
+                for x in lon_ticks:
+                    lon_labels.append(lon_label(x,2))
+                axs[anomaly].set_xticklabels(lon_labels)
+                axs[anomaly].tick_params(axis='x', labelrotation=45)
+
+            axs[anomaly].text(
+                0.5,
+                0.85,
+                experiment[j]+" - "+experiment[i],
+                horizontalalignment="center",
+                transform=axs[anomaly].transAxes,
+                bbox=dict(facecolor="white", alpha=0.9),
+            )
+            
+        # discarded graphs
+        for k in range(i):
+            axs[i + (total*k)].axis("off")
+    
+    ticks=np.arange(graph_params["low_val"], graph_params["high_val"]+0.1, 1)
+    cbar_ax = fig.add_axes([0.05, 0.525, 0.02, 0.4])
+    cbar = plt.colorbar(cs_diag, cax=cbar_ax, orientation='vertical')
+    cbar.set_ticks(ticks)
+    cbar.ax.yaxis.set_ticks_position('left')
+
+    ticks=np.arange(graph_params_anom["low_val"], graph_params_anom["high_val"]+0.1, 1)
+    cbar_ax = fig.add_axes([0.05, 0.1, 0.02, 0.4])
+    cbar = plt.colorbar(cs_anom, cax=cbar_ax, orientation='vertical')
+    cbar.set_ticks(ticks)
+    cbar.ax.yaxis.set_ticks_position('left')
+
+    fig.suptitle(title, fontsize=16)
+
+    # save figure
+    if save == True:
+        fig.savefig(file_out)
+
+    # show figure
+    if show == True:
+        plt.show()
 
 def contour_func(ax, data, set_up, graph_params, hide_ticks_x=True, hide_ticks_y=True):
     """
