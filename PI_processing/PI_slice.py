@@ -4,18 +4,16 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-import netCDF4 as nc
 import numpy as np
 import xarray as xr
 
-from funcs import read_variable, find_nearest
-from plots import create_mask
+from funcs import find_nearest
 from directories_and_paths import *
 from mitgcm_python.grid import Grid
 
 def main():
     period = "2070-2100"
-    var = "UVEL"
+    var = "salt"
     save = True
     show = True
     

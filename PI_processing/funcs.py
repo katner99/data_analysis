@@ -26,17 +26,24 @@ def read_timeseries(experiments, ensemble, var):
     data = {exp: {ens: [] for ens in ensemble} for exp in experiments}
     max_len = 181 * 12
 
+    if var in ["transport", "transport_south"]:
+        origin = "transport"
+    elif var == "melt":
+        origin = "melt"
+    else:
+        origin = "timeseries"
+
     for exp in experiments:
         for ens in ensemble:
             if exp == "LENS":
                 if ens < 6:
-                    filepath = f"{output_path}lens_timeseries/timeseries2101_experiment{ens}.nc"
+                    filepath = f"{output_path}lens_timeseries/{origin}2101_experiment{ens}.nc"
                 else:
                     path = f"{output_path}PAS_LENS00{ens}_noOBC/"
                     valid_file = [
                         filename
                         for filename in os.listdir(path)
-                        if filename.startswith("timeseries")
+                        if filename.startswith(origin)
                     ]
                     if valid_file:
                         filepath = f"{path}{valid_file[0]}"
@@ -47,7 +54,7 @@ def read_timeseries(experiments, ensemble, var):
                 valid_file = [
                     filename
                     for filename in os.listdir(path)
-                    if filename.startswith("timeseries")
+                    if filename.startswith(origin)
                 ]
                 if valid_file:
                     filepath = f"{path}{valid_file[0]}"
