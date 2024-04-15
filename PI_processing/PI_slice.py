@@ -4,7 +4,6 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-import netCDF4 as nc
 import numpy as np
 import xarray as xr
 

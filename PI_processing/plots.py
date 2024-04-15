@@ -9,7 +9,30 @@ from PIL import Image, ImageFilter
 import numpy as np
 from calcs import moving_average
 from mitgcm_python.grid import Grid
+from mitgcm_python.plot_utils.labels import lat_label, lon_label
 
+def pretty_labels(ax):
+    """
+    Adjusts the labels on the given matplotlib axis `ax` to display longitude and latitude 
+    values in a more readable format.
+
+    Parameters:
+    - ax (matplotlib.axis): The axis for which to adjust the labels.
+
+    Returns:
+    - None
+    """
+    lon_ticks = ax.get_xticks() - 360
+    lon_labels = []
+    for x in lon_ticks:
+        lon_labels.append(lon_label(x,2))
+    ax.set_xticklabels(lon_labels)
+    ax.tick_params(axis='x', labelrotation=45)
+    lat_ticks = ax.get_yticks()
+    lat_labels = []
+    for y in lat_ticks:
+        lat_labels.append(lat_label(y,2))
+    ax.set_yticklabels(lat_labels)
 
 def plot_timeseries_comparison(ax, data, experiments, ensemble_members, plot_info):
     """
@@ -262,7 +285,7 @@ def zoom_shelf(ax, zoom):
         ax.set_ylim([-75.5, -68])
 
 
-def read_mask(input_data):
+def read_mask(input_data, cut = None, lat_range = None, lon_range = None):
     """
     Reads and processes mask data from input data.
 
@@ -272,23 +295,37 @@ def read_mask(input_data):
     Returns:
         dict: Dictionary containing setup information for plotting including latitude, longitude, depth, ice mask, land mask, combined mask, colors, X, and Y coordinates.
     """
-    [lat, lon, ice_mask_temp, depth] = [
-        input_data[param].values for param in ["YC", "XC", "maskC", "Depth"]
-    ]
-    ice_mask = ice_mask_temp[0, :, :]
-    [land_mask, mask, colors] = create_mask(depth, ice_mask)
-    [X, Y] = np.meshgrid(lon, lat)
+    if cut is None:
+        [lat, lon, ice_mask_temp, depth] = [
+            input_data[param].values for param in ["YC", "XC", "maskC", "Depth"]
+        ]
+        ice_mask = ice_mask_temp[0, :, :]
+        [land_mask, mask, colors] = create_mask(depth, ice_mask)
+        [X, Y] = np.meshgrid(lon, lat)
 
-    set_up = {
-        "lat": lat,
-        "lon": lon,
-        "depth": depth,
-        "ice_mask": ice_mask,
-        "land_mask": land_mask,
-        "mask": mask,
-        "colors": colors,
-        "X": X,
-        "Y": Y,
-    }
-
+        set_up = {
+            "lat": lat,
+            "lon": lon,
+            "depth": depth,
+            "ice_mask": ice_mask,
+            "land_mask": land_mask,
+            "mask": mask,
+            "colors": colors,
+            "X": X,
+            "Y": Y,
+        }
+        
+    elif cut == "lat":
+        z = input_data.Z.values
+        lat = input_data["YC"][lat_range[0]:lat_range[1]].values
+        lon = input_data["XC"][lon_range]
+        ice_mask = input_data.maskC.values[:,lat_range[0]:lat_range[1],lon_range]
+        
+        set_up = {
+            "lat": lat,
+            "lon": lon,
+            "z": z,
+            "ice_mask": ice_mask,
+        }
+    
     return set_up

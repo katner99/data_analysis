@@ -17,6 +17,10 @@ lon_range_73 = [
     find_nearest(grid_file.XC.values, 255),
 ]
 
+# below are the definitions for the undercurrent slices
+lat_range_U1 = [find_nearest(grid_file.YC.values, -73.5), find_nearest(grid_file.YC.values, -71.8)]
+lon_range_U1 = find_nearest(grid_file.XC.values, 238)
+
 sv = 10 ** (-6)
 
 lat_bin, lon_bin, time_bin = 192, 288, 365

@@ -26,7 +26,7 @@ def main():
         "x_lim": [12, (2099-1920)*12],
         "smooth": 2,
         "shade_range": True,
-        "experiment_full": experiments,
+        "experiment_full": ["pre-industrial control", "high emissions", "thermodynamic forcing", "wind forcing"],
     }
 
     file_out = "timeseries_" + var + ".png"
