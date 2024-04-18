@@ -218,12 +218,13 @@ def quiver_func(ax, u, v, lat, lon, chunk, key = True):
         lat[0:-1:chunk],
         u[0:-1:chunk, 0:-1:chunk],
         v[0:-1:chunk, 0:-1:chunk],
-        scale=1.1,
+        scale=0.8,
+        width=0.005,
         color="indigo",
     )
     if key:
         ax.quiverkey(
-            q, 0.94, 0.95, 0.1, r"$0.1 \frac{m}{s}$", labelpos="E", coordinates="figure"
+            q, 0.94, 0.935, 0.1, r"$0.1 m/s$", labelpos="E", coordinates="figure"
         )
 
 def trend_quiver_func(ax, u, v, time, set_up, timescale = 1200, key = True):
@@ -236,10 +237,10 @@ def trend_quiver_func(ax, u, v, time, set_up, timescale = 1200, key = True):
             slope_u[lat, lon] = scipy.stats.linregress(u[:, lat, lon], time).slope / timescale
             slope_v[lat, lon] = scipy.stats.linregress(v[:, lat, lon], time).slope / timescale
             if scipy.stats.linregress(u[:, lat, lon], time).pvalue < 0.05 and scipy.stats.linregress(v[:, lat, lon], time).pvalue < 0.05:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='red', width=0.005)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='white', scale = 25, width=0.008)
             elif scipy.stats.linregress(u[:, lat, lon], time).pvalue < 0.05 or scipy.stats.linregress(v[:, lat, lon], time).pvalue < 0.05:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='coral', width=0.005)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='grey', scale = 25, width=0.008)
             else:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon],slope_u[lat, lon], slope_v[lat, lon], color='lightgray', width=0.005)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon],slope_u[lat, lon], slope_v[lat, lon], color='grey', scale = 25, width=0.003)
     if key:
-        ax.quiverkey(q, 0.935, 0.5, 3, r'$3 \frac{m}{s}cent.$', labelpos='E', coordinates='figure')
+        ax.quiverkey(q, 0.938, 0.495, 3, r'$3 \frac{m/s}{cent.}$', color='k', labelpos='E', coordinates='figure')
