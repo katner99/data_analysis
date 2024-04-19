@@ -38,7 +38,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
         cs = contour_func(axs[position], residual, set_up, graph_params_anom)
         zoom_shelf(axs[position], zoom)
 
-        fig.colorbar(cs, ax=axs[position], ticks=np.arange(-1, 1.1, 1))
+        fig.colorbar(cs, ax=axs[position], ticks=np.arange(-10, 10.1, 10))
         axs[position].set_title("Residual", fontsize=graph_params["font_size"], weight="bold")
 
         lon_ticks = axs[position].get_xticks() - 360
@@ -83,6 +83,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
                 lon_labels.append(lon_label(x,2))
             axs[diagonal].set_xticklabels(lon_labels)
             axs[diagonal].tick_params(axis='x', labelrotation=45)
+            axs[diagonal].set_xticklabels(lon_labels[:-1] + [""])
 
         # ANOMALY
         for j in range(i+1, total):
@@ -114,7 +115,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
                 lon_labels = []
                 for x in lon_ticks:
                     lon_labels.append(lon_label(x,2))
-                axs[anomaly].set_xticklabels(lon_labels)
+                axs[anomaly].set_xticklabels(lon_labels[:-1] + [""])
                 axs[anomaly].tick_params(axis='x', labelrotation=45)
 
             axs[anomaly].text(
@@ -130,13 +131,13 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
         for k in range(i):
             axs[i + (total*k)].axis("off")
     
-    ticks=np.arange(graph_params["low_val"], graph_params["high_val"]+0.1, 1)
+    ticks=np.arange(graph_params["low_val"], graph_params["high_val"]+0.1, graph_params["interval"])
     cbar_ax = fig.add_axes([0.05, 0.525, 0.02, 0.4])
     cbar = plt.colorbar(cs_diag, cax=cbar_ax, orientation='vertical')
     cbar.set_ticks(ticks)
     cbar.ax.yaxis.set_ticks_position('left')
 
-    ticks=np.arange(graph_params_anom["low_val"], graph_params_anom["high_val"]+0.1, 1)
+    ticks=np.arange(graph_params_anom["low_val"], graph_params_anom["high_val"]+0.1, graph_params_anom["interval"])
     cbar_ax = fig.add_axes([0.05, 0.1, 0.02, 0.4])
     cbar = plt.colorbar(cs_anom, cax=cbar_ax, orientation='vertical')
     cbar.set_ticks(ticks)
@@ -151,6 +152,9 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
     # show figure
     if show == True:
         plt.show()
+
+
+
 
 def contour_func(ax, data, set_up, graph_params, hide_ticks_x=True, hide_ticks_y=True):
     """

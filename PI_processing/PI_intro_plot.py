@@ -100,10 +100,10 @@ def plot_intro(ctrl_temp, lens_temp, graph_params_temp, speed, u, v, set_up, gra
     plt.subplots_adjust(wspace=0.05, hspace=0.05)
     axs = axs.flatten()
 
-    plot_contour(axs[0], ctrl_temp, set_up, graph_params_temp, "Pre-industrial averaged temperature (degC)", hide_ticks_y=False)
-    cs_vel = plot_contour(axs[1], speed, set_up, graph_params_vel, "Bottom Velocity (m/s)")
-    cs_temp = plot_contour(axs[2], lens_temp, set_up, graph_params_temp, "End of century averaged temperature (degC)", hide_ticks_x=False, hide_ticks_y=False)
-    cs_bathy = plot_contour(axs[3], set_up["depth"], set_up, graph_params_bathy, "Projected wind trends (m/s/century)", hide_ticks_x=False)
+    plot_contour(axs[0], ctrl_temp, set_up, graph_params_temp, "a. Pre-industrial averaged temperature (degC)", hide_ticks_y=False)
+    cs_vel = plot_contour(axs[1], speed, set_up, graph_params_vel, "b. Bottom Velocity (m/s)")
+    cs_temp = plot_contour(axs[2], lens_temp, set_up, graph_params_temp, "c. End of century averaged temperature (degC)", hide_ticks_x=False, hide_ticks_y=False)
+    cs_bathy = plot_contour(axs[3], set_up["depth"], set_up, graph_params_bathy, "d. Projected wind trends (m/s/century)", hide_ticks_x=False)
      
     quiver_func(axs[1], u, v, set_up["lat"], set_up["lon"], chunk)
     trend_quiver_func(axs[3], uwind, vwind, time, set_up)
