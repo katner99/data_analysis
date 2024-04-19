@@ -38,7 +38,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
         cs = contour_func(axs[position], residual, set_up, graph_params_anom)
         zoom_shelf(axs[position], zoom)
 
-        fig.colorbar(cs, ax=axs[position], ticks=np.arange(-1, 1.1, 1))
+        fig.colorbar(cs, ax=axs[position], ticks=np.arange(-10, 10.1, 10))
         axs[position].set_title("Residual", fontsize=graph_params["font_size"], weight="bold")
 
         lon_ticks = axs[position].get_xticks() - 360
@@ -83,6 +83,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
                 lon_labels.append(lon_label(x,2))
             axs[diagonal].set_xticklabels(lon_labels)
             axs[diagonal].tick_params(axis='x', labelrotation=45)
+            axs[diagonal].set_xticklabels(lon_labels[:-1] + [""])
 
         # ANOMALY
         for j in range(i+1, total):
@@ -114,7 +115,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
                 lon_labels = []
                 for x in lon_ticks:
                     lon_labels.append(lon_label(x,2))
-                axs[anomaly].set_xticklabels(lon_labels)
+                axs[anomaly].set_xticklabels(lon_labels[:-1] + [""])
                 axs[anomaly].tick_params(axis='x', labelrotation=45)
 
             axs[anomaly].text(
@@ -130,13 +131,13 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
         for k in range(i):
             axs[i + (total*k)].axis("off")
     
-    ticks=np.arange(graph_params["low_val"], graph_params["high_val"]+0.1, 1)
+    ticks=np.arange(graph_params["low_val"], graph_params["high_val"]+0.1, graph_params["interval"])
     cbar_ax = fig.add_axes([0.05, 0.525, 0.02, 0.4])
     cbar = plt.colorbar(cs_diag, cax=cbar_ax, orientation='vertical')
     cbar.set_ticks(ticks)
     cbar.ax.yaxis.set_ticks_position('left')
 
-    ticks=np.arange(graph_params_anom["low_val"], graph_params_anom["high_val"]+0.1, 1)
+    ticks=np.arange(graph_params_anom["low_val"], graph_params_anom["high_val"]+0.1, graph_params_anom["interval"])
     cbar_ax = fig.add_axes([0.05, 0.1, 0.02, 0.4])
     cbar = plt.colorbar(cs_anom, cax=cbar_ax, orientation='vertical')
     cbar.set_ticks(ticks)
@@ -151,6 +152,9 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
     # show figure
     if show == True:
         plt.show()
+
+
+
 
 def contour_func(ax, data, set_up, graph_params, hide_ticks_x=True, hide_ticks_y=True):
     """
@@ -218,12 +222,13 @@ def quiver_func(ax, u, v, lat, lon, chunk, key = True):
         lat[0:-1:chunk],
         u[0:-1:chunk, 0:-1:chunk],
         v[0:-1:chunk, 0:-1:chunk],
-        scale=1.1,
+        scale=0.8,
+        width=0.005,
         color="indigo",
     )
     if key:
         ax.quiverkey(
-            q, 0.94, 0.95, 0.1, r"$0.1 \frac{m}{s}$", labelpos="E", coordinates="figure"
+            q, 0.94, 0.935, 0.1, r"$0.1 m/s$", labelpos="E", coordinates="figure"
         )
 
 def trend_quiver_func(ax, u, v, time, set_up, timescale = 1200, key = True):
@@ -236,10 +241,10 @@ def trend_quiver_func(ax, u, v, time, set_up, timescale = 1200, key = True):
             slope_u[lat, lon] = scipy.stats.linregress(u[:, lat, lon], time).slope / timescale
             slope_v[lat, lon] = scipy.stats.linregress(v[:, lat, lon], time).slope / timescale
             if scipy.stats.linregress(u[:, lat, lon], time).pvalue < 0.05 and scipy.stats.linregress(v[:, lat, lon], time).pvalue < 0.05:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='red', width=0.005)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='white', scale = 25, width=0.008)
             elif scipy.stats.linregress(u[:, lat, lon], time).pvalue < 0.05 or scipy.stats.linregress(v[:, lat, lon], time).pvalue < 0.05:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='coral', width=0.005)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='grey', scale = 25, width=0.008)
             else:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon],slope_u[lat, lon], slope_v[lat, lon], color='lightgray', width=0.005)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon],slope_u[lat, lon], slope_v[lat, lon], color='grey', scale = 25, width=0.003)
     if key:
-        ax.quiverkey(q, 0.935, 0.5, 3, r'$3 \frac{m}{s}cent.$', labelpos='E', coordinates='figure')
+        ax.quiverkey(q, 0.938, 0.495, 3, r'$3 \frac{m/s}{cent.}$', color='k', labelpos='E', coordinates='figure')

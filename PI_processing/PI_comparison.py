@@ -15,7 +15,7 @@ def main():
     """
         
     # set up the variables you need
-    var = "THETA"
+    var = "SALT"
     save = True
     show = True
     period = "2070-2100"
@@ -51,6 +51,15 @@ def main():
         interval = 1
         interval_anom = 0.5
 
+    elif var == "SIheff":
+        data = [read_variable(input, var, grid) for input in input_data]
+        color_scheme = "jet"
+        anom = 1
+        min_val = 0
+        max_val = 2
+        interval = 0.25
+        interval_anom = 0.25
+        title = f"Sea ice thickness (m) {period}"
     # sea ice tickness
     elif var in ["SIheff", "oceFWflx", "SIfwmelt", "SIfwfrz", "EXFvwind", "oceQnet"]:
         data = [read_variable(input, var, grid)*3600*24*365/1000 for input in input_data]
@@ -64,12 +73,14 @@ def main():
 
     # salinity
     elif var == "SALT":
-        depth_range = [find_nearest(input_data[0]["Z"].values, -200), find_nearest(input_data[0]["Z"].values, -700)]
-        data = [read_variable(input, var, grid, depth_range) for input in input_data]
+        data = [read_variable(input, var, grid) for input in input_data]
         color_scheme = "PRGn_r"
         anom = 0.25
         min_val = int(np.min(data[0]))
         max_val =  int(np.max(data[0]))+1
+        title = f"Surface Salinity {period}"
+        interval = 1
+        interval_anom = 0.25
         
     elif var == "SHIfwFlx":
         data = [-read_variable(input, var, grid)*3600*24*30*10**(-3) for input in input_data]
@@ -78,6 +89,8 @@ def main():
         min_val = 0
         max_val = 76
         title = f"ice shelf basal melt rate ({period}) (m.w.e./yr)"
+        interval = 20
+        interval_anom = 10
 
     # graph parameters 1.333112e-05 -1.0214189e-06
     graph_params = {
@@ -86,7 +99,7 @@ def main():
         "high_val": max_val,
         "interval": interval,
         "color_scheme": color_scheme,
-        "step": 15,
+        "step": 20,
     }
 
     graph_params_anom = {
@@ -94,8 +107,8 @@ def main():
         "low_val": -anom,
         "high_val": anom,
         "interval": interval_anom,
-        "color_scheme" : "PRGn_r",
-        "step": 15,
+        "color_scheme" :"PRGn_r",
+        "step": 20,
     }
 
     
@@ -103,7 +116,7 @@ def main():
 
     residual = data[0]+data[1]-data[2]-data[3]
 
-    comparison(data, set_up, graph_params, graph_params_anom, experiment, title, file_out, save, show, True, residual, "cont_shelf")
+    comparison(data, set_up, graph_params, graph_params_anom, experiment, title, file_out, save, show, True, residual)
           
 if __name__ == '__main__':
     main() # run the program
