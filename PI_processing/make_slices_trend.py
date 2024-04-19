@@ -48,13 +48,16 @@ def append_years_slice(ensemble, exp, start_year, n_years):
 
 
 def main():
-    experiments = ["WIND", "TEMP", "LENS"]
-    ensemble = 9
+    experiments = ["TEMP"]
+    ensemble = 1
     print(ensemble)
 
     for exp in experiments:
         data = append_years_slice(ensemble, exp, 1920, 181)
-        output_file = f"{output_path}{exp}_ens0{ensemble}_noOBC/ensemble_mean_{exp}.nc"
+        if exp=="LENS" and ensemble < 6:
+            output_file = f"{output_path}ensemble_mean_{exp}_{ensemble}.nc"
+        else:
+            output_file = f"{output_path}{exp}_ens0{ensemble}_noOBC/ensemble_mean_{exp}.nc"
         data.to_netcdf(output_file)
 
 if __name__ == '__main__':

@@ -161,7 +161,7 @@ def read_variable(input_data, var, grid, depth_range=None):
     # Number of days in each month
     days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-    if var in ["THETA", "SALT"]:
+    if var == "THETA":
         data = mask_3d(input_data[var].values, grid, time_dependent=True)
         data_cut = data[:, depth_range[0] : depth_range[1], :, :]
         mask_cut = np.invert(data.mask).astype(float)[
@@ -172,7 +172,11 @@ def read_variable(input_data, var, grid, depth_range=None):
             axis=0,
             weights=days_in_month,
         )
-
+    
+    if var == "SALT":
+        data = mask_3d(input_data[var].values, grid, time_dependent=True)
+        return np.average(data[:,0,...], axis = 0, weights=days_in_month)
+    
     if var == "SHIfwFlx":
         return np.sum(input_data[var].values, axis=0)
     
