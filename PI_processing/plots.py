@@ -11,9 +11,10 @@ from calcs import moving_average
 from mitgcm_python.grid import Grid
 from mitgcm_python.plot_utils.labels import lat_label, lon_label
 
+
 def pretty_labels(ax):
     """
-    Adjusts the labels on the given matplotlib axis `ax` to display longitude and latitude 
+    Adjusts the labels on the given matplotlib axis `ax` to display longitude and latitude
     values in a more readable format.
 
     Parameters:
@@ -25,150 +26,14 @@ def pretty_labels(ax):
     lon_ticks = ax.get_xticks() - 360
     lon_labels = []
     for x in lon_ticks:
-        lon_labels.append(lon_label(x,2))
+        lon_labels.append(lon_label(x, 2))
     ax.set_xticklabels(lon_labels)
-    ax.tick_params(axis='x', labelrotation=45)
+    ax.tick_params(axis="x", labelrotation=45)
     lat_ticks = ax.get_yticks()
     lat_labels = []
     for y in lat_ticks:
-        lat_labels.append(lat_label(y,2))
+        lat_labels.append(lat_label(y, 2))
     ax.set_yticklabels(lat_labels)
-
-def plot_timeseries_comparison(ax, data, experiments, ensemble_members, plot_info):
-    """
-    This function generates a plot comparing different experiments based on the provided data and plot information.
-
-    Parameters:
-    - data: Dictionary containing the data for different experiments
-    - experiments: List of experiment names to be compared
-    - ensemble_members: List of ensemble members
-    - plot_info: Dictionary containing plot configuration parameters including:
-      - ylabel: Label for the y-axis
-      - xlabel: Label for the x-axis
-      - time: Time information
-      - file_out: Output file name for saving the plot
-      - smooth: Smoothing factor for the data (optional, default is 0)
-      - linearity: Flag indicating whether to plot linearity (optional, default is False)
-      - warming: Flag indicating whether to adjust for warming (optional, default is False)
-      - percentage: Flag indicating whether to calculate percentage (optional, default is False)
-      - shade_range: Flag indicating whether to shade the range (optional, default is True)
-      - title: Title for the plot (optional)
-      - experiment_full: List containing full names of experiments (optional)
-
-    Returns:
-    - ax: Axis object representing the main plot
-    - all_means: List containing the means of all experiments' data
-    """
-    colors = ["forestgreen", "orangered", "purple", "dodgerblue"]
-    experiment_full = plot_info["experiment_full"]
-    all_means = []
-
-    if plot_info.get("warming", False):
-        ctrl_mean = np.nanmean(
-            [
-                data["CTRL"][ens][ts_idx][:]
-                for ens in ensemble_members
-                for ts_idx in range(len(data["CTRL"][ens]))
-            ],
-            axis=0,
-        )
-        warming_diff = -np.nanmean(ctrl_mean)
-
-    for exp_idx, exp in enumerate(experiments):
-        experiment_mean = (
-            np.nanmean(
-                [
-                    data[exp][ens][ts_idx][:]
-                    for ens in ensemble_members
-                    for ts_idx in range(len(data[exp][ens]))
-                ],
-                axis=0,
-            )
-        )
-        experiment_max = (
-            np.nanmax(
-                [
-                    data[exp][ens][ts_idx][:]
-                    for ens in ensemble_members
-                    for ts_idx in range(len(data[exp][ens]))
-                ],
-                axis=0,
-            )
-        )
-        experiment_min = (
-            np.nanmin(
-                [
-                    data[exp][ens][ts_idx][:]
-                    for ens in ensemble_members
-                    for ts_idx in range(len(data[exp][ens]))
-                ],
-                axis=0,
-            )
-        )
-
-        if plot_info.get("smooth", 0) > 0:
-            smoothed_mean = moving_average(experiment_mean, plot_info["smooth"] * 12)
-            if plot_info.get("shade_range", True):
-                smoothed_max = moving_average(experiment_max, plot_info["smooth"] * 12)
-                smoothed_min = moving_average(experiment_min, plot_info["smooth"] * 12)
-        else:
-            smoothed_mean, smoothed_max, smoothed_min = (
-                experiment_mean,
-                experiment_max,
-                experiment_min,
-            )
-
-        if plot_info.get("warming", False):
-            smoothed_mean += warming_diff
-            smoothed_max += warming_diff
-            smoothed_min += warming_diff
-
-        ax.plot(
-            smoothed_mean,
-            color=colors[exp_idx],
-            label=experiment_full[exp_idx],
-            alpha=1,
-        )
-
-        if plot_info.get("shade_range", True):
-            ax.fill_between(
-                range(len(smoothed_min)),
-                smoothed_min,
-                smoothed_max,
-                color=colors[exp_idx],
-                alpha=0.3,
-            )
-
-        all_means.append(experiment_mean[:])
-
-    if plot_info.get("linearity", False) or plot_info.get("percentage", False):
-        linearity = moving_average(
-            all_means[3] + all_means[2] - all_means[0] - all_means[1],
-            12 * plot_info.get("smooth", 0),
-        )
-        ax.plot(linearity, color="black", label="linearity")
-        ax.axhline(0, color="grey")
-
-    ax.set_ylabel(plot_info["ylabel"], fontsize=14)
-    ax.set_xticks(
-        np.arange(
-            6 * plot_info.get("smooth", 0),
-            plot_info["time"] - (6 * plot_info.get("smooth", 0)),
-            120,
-        )
-    )
-    ax.set_xticklabels(plot_info["xlabel"].astype(str), rotation=45)
-    ax.set_xlim(plot_info["x_lim"])
-    ax.set_title(plot_info.get("title"))
-
-    if plot_info.get("warming", False):
-        ax.set_ylim([-1.6, 1.6])
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    ax.legend()
-    ax.grid(alpha=0.8)
-
-    return ax, all_means
 
 
 def create_mask(depth, ice_mask):
@@ -276,6 +141,7 @@ def read_u_and_v(input_data, option="avg"):
     speed, u_plot, v_plot = prepare_vel(u, v, grid, vel_option=option)
     return speed, u_plot, v_plot
 
+
 def zoom_shelf(ax, zoom):
     if zoom == "ice_shelf":
         ax.set_ylim([-75.6, -70])
@@ -285,7 +151,7 @@ def zoom_shelf(ax, zoom):
         ax.set_ylim([-75.5, -68])
 
 
-def read_mask(input_data, cut = None, lat_range = None, lon_range = None):
+def read_mask(input_data=None, cut=None, lat_range=None, lon_range=None):
     """
     Reads and processes mask data from input data.
 
@@ -295,6 +161,14 @@ def read_mask(input_data, cut = None, lat_range = None, lon_range = None):
     Returns:
         dict: Dictionary containing setup information for plotting including latitude, longitude, depth, ice mask, land mask, combined mask, colors, X, and Y coordinates.
     """
+    import xarray as xr
+    from directories_and_paths import output_path
+
+    if input_data is None:
+        input_data = xr.open_dataset(
+            f"{output_path}average_CTRL_1920-1950.nc", decode_times=False
+        )
+
     if cut is None:
         [lat, lon, ice_mask_temp, depth] = [
             input_data[param].values for param in ["YC", "XC", "maskC", "Depth"]
@@ -314,18 +188,172 @@ def read_mask(input_data, cut = None, lat_range = None, lon_range = None):
             "X": X,
             "Y": Y,
         }
-        
+
     elif cut == "lat":
         z = input_data.Z.values
-        lat = input_data["YC"][lat_range[0]:lat_range[1]].values
+        lat = input_data["YC"][lat_range[0] : lat_range[1]].values
         lon = input_data["XC"][lon_range]
-        ice_mask = input_data.maskC.values[:,lat_range[0]:lat_range[1],lon_range]
-        
+        ice_mask = input_data.maskC.values[:, lat_range[0] : lat_range[1], lon_range]
+
         set_up = {
             "lat": lat,
             "lon": lon,
             "z": z,
             "ice_mask": ice_mask,
         }
-    
+
     return set_up
+
+
+def plot_timeseries_comparison(
+    ax, data, experiments, ensemble_members, plot_info, standard_deviation=False
+):
+    """
+    This function generates a plot comparing different experiments based on the provided data and plot information.
+
+    Parameters:
+    - data: Dictionary containing the data for different experiments
+    - experiments: List of experiment names to be compared
+    - ensemble_members: List of ensemble members
+    - plot_info: Dictionary containing plot configuration parameters including:
+      - ylabel: Label for the y-axis
+      - xlabel: Label for the x-axis
+      - time: Time information
+      - file_out: Output file name for saving the plot
+      - smooth: Smoothing factor for the data (optional, default is 0)
+      - linearity: Flag indicating whether to plot linearity (optional, default is False)
+      - warming: Flag indicating whether to adjust for warming (optional, default is False)
+      - percentage: Flag indicating whether to calculate percentage (optional, default is False)
+      - shade_range: Flag indicating whether to shade the range (optional, default is True)
+      - title: Title for the plot (optional)
+      - experiment_full: List containing full names of experiments (optional)
+
+    Returns:
+    - ax: Axis object representing the main plot
+    - all_means: List containing the means of all experiments' data
+    """
+    colors = ["forestgreen", "orangered", "purple", "dodgerblue"]
+    experiment_full = plot_info["experiment_full"]
+    all_means = []
+
+    if plot_info.get("warming", False):
+        ctrl_mean = np.nanmean(
+            [
+                data["CTRL"][ens][ts_idx][:]
+                for ens in ensemble_members
+                for ts_idx in range(len(data["CTRL"][ens]))
+            ],
+            axis=0,
+        )
+        warming_diff = -np.nanmean(ctrl_mean)
+
+    for exp_idx, exp in enumerate(experiments):
+        experiment_mean = np.nanmean(
+            [
+                data[exp][ens][ts_idx][:]
+                for ens in ensemble_members
+                for ts_idx in range(len(data[exp][ens]))
+            ],
+            axis=0,
+        )
+        if standard_deviation == False:
+            experiment_max = np.nanmax(
+                [
+                    data[exp][ens][ts_idx][:]
+                    for ens in ensemble_members
+                    for ts_idx in range(len(data[exp][ens]))
+                ],
+                axis=0,
+            )
+            experiment_min = np.nanmin(
+                [
+                    data[exp][ens][ts_idx][:]
+                    for ens in ensemble_members
+                    for ts_idx in range(len(data[exp][ens]))
+                ],
+                axis=0,
+            )
+        else:
+            experiment_max = experiment_mean + 2 * (
+                np.nanstd(
+                    [
+                        data[exp][ens][ts_idx][:]
+                        for ens in ensemble_members
+                        for ts_idx in range(len(data[exp][ens]))
+                    ],
+                    axis=0,
+                )
+            )
+            experiment_min = experiment_mean - 2 * (
+                np.nanstd(
+                    [
+                        data[exp][ens][ts_idx][:]
+                        for ens in ensemble_members
+                        for ts_idx in range(len(data[exp][ens]))
+                    ],
+                    axis=0,
+                )
+            )
+
+        if plot_info.get("smooth", 0) > 0:
+            smoothed_mean = moving_average(experiment_mean, plot_info["smooth"] * 12)
+            if plot_info.get("shade_range", True):
+                smoothed_max = moving_average(experiment_max, plot_info["smooth"] * 12)
+                smoothed_min = moving_average(experiment_min, plot_info["smooth"] * 12)
+        else:
+            smoothed_mean, smoothed_max, smoothed_min = (
+                experiment_mean,
+                experiment_max,
+                experiment_min,
+            )
+
+        if plot_info.get("warming", False):
+            smoothed_mean += warming_diff
+            smoothed_max += warming_diff
+            smoothed_min += warming_diff
+
+        ax.plot(
+            smoothed_mean,
+            color=colors[exp_idx],
+            label=experiment_full[exp_idx],
+            alpha=1,
+        )
+
+        if plot_info.get("shade_range", True):
+            ax.fill_between(
+                range(len(smoothed_min)),
+                smoothed_min,
+                smoothed_max,
+                color=colors[exp_idx],
+                alpha=0.3,
+            )
+
+        all_means.append(experiment_mean[:])
+
+    if plot_info.get("linearity", False) or plot_info.get("percentage", False):
+        linearity = moving_average(
+            all_means[0] + all_means[1] - all_means[2] - all_means[3],
+            12 * plot_info.get("smooth", 0),
+        )
+        ax.plot(linearity, color="black", label="linearity")
+        ax.axhline(0, color="grey")
+
+    ax.set_ylabel(plot_info["ylabel"], fontsize=14)
+    ax.set_xticks(
+        np.arange(
+            6 * plot_info.get("smooth", 0),
+            plot_info["time"] - (6 * plot_info.get("smooth", 0)),
+            120,
+        )
+    )
+    ax.set_xticklabels(plot_info["xlabel"].astype(str), rotation=45)
+    ax.set_xlim(plot_info["x_lim"])
+    ax.set_title(plot_info.get("title"))
+
+    if plot_info.get("warming", False):
+        ax.set_ylim([-1.6, 1.6])
+
+    ax.legend()
+    ax.grid(alpha=0.8)
+
+    return ax, all_means
