@@ -69,6 +69,12 @@ slice_ranges = {
         find_nearest(grid_file.YC.values, -70),
     ],
     "lon_range_u4": find_nearest(grid_file.XC.values, 255),
+    "lon_range_cont": [
+        find_nearest(grid_file.XC.values, 250), 
+        find_nearest(grid_file.XC.values, 260)],
+    "lat_range_cont": [
+        find_nearest(grid_file.YC.values, -75), 
+        find_nearest(grid_file.YC.values, -71.5)],
 }
 
 

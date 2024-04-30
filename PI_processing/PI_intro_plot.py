@@ -1,4 +1,7 @@
+import matplotlib
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
+
 import numpy as np
 import matplotlib
 import xarray as xr
@@ -108,13 +111,18 @@ def plot_intro(ctrl_temp, lens_temp, graph_params_temp, speed, u, v, set_up, gra
     quiver_func(axs[1], u, v, set_up["lat"], set_up["lon"], chunk)
     trend_quiver_func(axs[3], uwind, vwind, time, set_up)
 
+    map = plt.imread("maploc.png")
+    map_ax = fig.add_axes([0,0.8,0.08,0.08])
+    map_ax.imshow(map)
+    map_ax.axis("off")
+
     ticks = np.arange(graph_params_vel["low_val"], graph_params_vel["high_val"] + 0.1, graph_params_vel["interval"])
     cbar_ax = fig.add_axes([0.92, 0.55, 0.02, 0.35])
     cbar = plt.colorbar(cs_vel, cax=cbar_ax)
     cbar.set_ticks(ticks)
 
     ticks = np.arange(graph_params_temp["low_val"], graph_params_temp["high_val"] + 0.1, graph_params_temp["interval"])
-    cbar_ax = fig.add_axes([0.05, 0.15, 0.02, 0.7])
+    cbar_ax = fig.add_axes([0.05, 0.1, 0.02, 0.65])
     cbar = plt.colorbar(cs_temp, cax=cbar_ax, orientation='vertical')
     cbar.set_ticks(ticks)
     cbar.ax.yaxis.set_ticks_position('left') 
@@ -124,7 +132,7 @@ def plot_intro(ctrl_temp, lens_temp, graph_params_temp, speed, u, v, set_up, gra
     cbar = plt.colorbar(cs_bathy, cax=cbar_ax)
     cbar.set_ticks(ticks)
 
-    fig.savefig("introduction_plot.png", transparent=True)
+    fig.savefig("introduction_plot.png", transparent=False)
 
     plt.show()
 
