@@ -12,7 +12,7 @@ from funcs import read_variable, find_nearest
 from plots import create_mask
 from directories_and_paths import *
 from mitgcm_python.grid import Grid
-from PI_timeseries import plot_comparison
+#from PI_timeseries import plot_comparison
 
 def load_data(experiments, ensemble, var):
     data_load = {exp: {ens: [] for ens in ensemble} for exp in experiments}
@@ -72,11 +72,11 @@ def main():
     # pine island coastal box;
     lon_box_1 = [find_nearest(lon, 95+180), find_nearest(lon, 115+180)]
     lat_box_1 = [find_nearest(lat, -75), find_nearest(lat, -73)]
-    box_1 = Polygon([[238, -73], [238, -73], [238, -71.8], [238, -71.8]], fill = False, closed = True, edgecolor = "magenta", linewidth = 3, label = "undercurrent 1")
-    box_2 = Polygon([[252.8, -73], [255, -73], [255, -73], [252.8, -73]], fill = False, closed = True, edgecolor = "mediumorchid", linewidth = 3, label = "trough")
-    box_3 = Polygon([[250, -72], [250, -72], [250, -70], [250, -70]], fill = False, closed = True, edgecolor = "hotpink", linewidth = 3, label = "undercurrent 2")
-    box_4 = Polygon([[243, -72], [243, -72], [243, -70.5], [243, -70.5]], fill = False, closed = True, edgecolor = "crimson", linewidth = 3, label = "undercurrent 3")
-    box_5 = Polygon([[255, -71.5], [255, -71.5], [255, -70], [255, -70]], fill = False, closed = True, edgecolor = "purple", linewidth = 3, label = "undercurrent 4")
+    box_1 = Polygon([[250, -75], [260, -75], [260, -71.5], [250, -71.5]], fill = False, closed = True, edgecolor = "magenta", linewidth = 3, label = "profile average")
+    #box_2 = Polygon([[252.8, -73], [255, -73], [255, -73], [252.8, -73]], fill = False, closed = True, edgecolor = "mediumorchid", linewidth = 3, label = "trough")
+    #box_3 = Polygon([[250, -72], [250, -72], [250, -70], [250, -70]], fill = False, closed = True, edgecolor = "hotpink", linewidth = 3, label = "undercurrent 2")
+    #box_4 = Polygon([[243, -72], [243, -72], [243, -70.5], [243, -70.5]], fill = False, closed = True, edgecolor = "crimson", linewidth = 3, label = "undercurrent 3")
+    #box_5 = Polygon([[255, -71.5], [255, -71.5], [255, -70], [255, -70]], fill = False, closed = True, edgecolor = "purple", linewidth = 3, label = "undercurrent 4")
 
     ylabel = "Temperature (°C)"
     xlabel = np.linspace(1920, 2100,21, dtype = int)
@@ -94,10 +94,10 @@ def main():
     ax.contourf(X, Y, land_mask, cmap=matplotlib.colors.ListedColormap(colors))
     ax.contour(X, Y, mask, 2, cmap="Greys", linestyles="dashed")
     ax.add_patch(box_1)
-    ax.add_patch(box_2)
-    ax.add_patch(box_3)
-    ax.add_patch(box_4)
-    ax.add_patch(box_5)
+    #ax.add_patch(box_2)
+    #ax.add_patch(box_3)
+    #ax.add_patch(box_4)
+    #ax.add_patch(box_5)
     ax.legend()
     ticks=np.arange(0, 4000, 500)
     cbar = fig.colorbar(cs)
@@ -108,7 +108,7 @@ def main():
     #plot_comparison(ax[2], variables[1], data_c, experiments, ensemble, ylabel, xlabel, time, title = "coastal timeseries", file_out = None, smooth = smooth, linearity = linearity)
     #plot_comparison(ax[3], variables[2], data_s, experiments, ensemble, ylabel, xlabel, time, title = "shelf_break timeseries", file_out = None, smooth = smooth, linearity = linearity)
     #plot_comparison(ax[4], variables[3], data_a, experiments, ensemble, ylabel, xlabel, time, title = "Abbot timeseries", file_out = None, smooth = smooth, linearity = linearity)
-    fig.savefig("amundsen_map_slices.png", transparent = True)
+    fig.savefig("amundsen_map_profile.png", transparent = True)
     plt.show()
             
 if __name__ == '__main__':

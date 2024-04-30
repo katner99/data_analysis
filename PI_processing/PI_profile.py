@@ -1,7 +1,7 @@
 from funcs import read_variable, find_nearest, create_profile
 from mitgcm_python.grid import Grid
-from directories_and_paths import *
-
+from directories_and_paths import output_path, grid_filepath
+from config_options import slice_ranges
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -10,89 +10,61 @@ import sys
 import numpy as np
 import xarray as xr
 
-def main():
-    ## check that enough arguments have been input by the user
-    #if len(sys.argv) != 2:
-    #    sys.exit("Stopped - Incorrect number of arguements. Use python PI_comparison.py <var>")
-    
-    # set up the variables you need
-    #var = str(sys.argv[1])
-    save = True
-    show = True
-
-    # load up the file paths for the monster, needed 4
-    filepath_ctrl = "/data/oceans_output/shelf/katner33/PIctrl_output/PAS_wind09/output/209001/MITgcm/output.nc"
-    #filepath_lens = "/data/oceans_output/shelf/katner33/PIctrl_output/LENS_ensemble_mean_2090.nc"
-    filepath_wind = "/data/oceans_output/shelf/katner33/PIctrl_output/PAS_wind09test/output/209001/MITgcm/output.nc"
-    #filepath_temp = "/data/oceans_output/shelf/katner33/PIctrl_output/THERM_ensemble_mean_2090.nc"
-    #filepath_ctrl = "/data/oceans_output/shelf/katner33/PIctrl_output/climatology_runs/transient_average.nc"
-    #filepath_lens = "/data/oceans_output/shelf/katner33/PIctrl_output/climatology_runs/presentday_climatology.nc"
-    #filepath_wind = "/data/oceans_output/shelf/katner33/PIctrl_output/climatology_runs/historic_climatology.nc"
-    #filepath_temp = "/data/oceans_output/shelf/katner33/PIctrl_output/climatology_runs/future_climatology.nc"
-
-    # check if the input files exist
-    for filepath in [filepath_ctrl, filepath_wind, ]:
+def plot_period(ax, period, var):
+    experiments = ["CTRL", "LENS", "TEMP", "WIND"]
+    colors = ["forestgreen", "orangered", "purple", "dodgerblue"]
+    filepaths = [
+        output_path + "average_" + exp + "_" + period + ".nc"
+        for exp in experiments
+    ]
+    for filepath in filepaths:
         try:
             open(filepath)
         except FileNotFoundError:
             sys.exit(f"Stopped - Could not find input file {filepath}")
 
-    # load up the input data    
-    ctrl_input_data = xr.open_dataset(filepath_ctrl)
-    #lens_input_data = xr.open_dataset(filepath_lens)
-    #temp_input_data = xr.open_dataset(filepath_temp)
-    wind_input_data = xr.open_dataset(filepath_wind)
+    input_data = [xr.open_dataset(filepath, decode_times=False) for filepath in filepaths]
+    grid = Grid(grid_filepath)
+    lon_range = slice_ranges["lon_range_cont"]
+    lat_range = slice_ranges["lat_range_cont"]
     
-    # read in the general variables (these should be the same between the ensembles
-    # set lat, lon, and depth range
-    grid_file = "/data/oceans_output/shelf/kaight/archer2_mitgcm/PAS_LENS001_O/output/192001/MITgcm/output.nc"
-    grid = Grid(grid_file)
-    lon_range = [find_nearest(ctrl_input_data.XC.values, 240), find_nearest(ctrl_input_data.XC.values, 260)]
-    lat_range = [find_nearest(ctrl_input_data.YC.values, -80), find_nearest(ctrl_input_data.YC.values, -70)]
     
-   
-    # create the profile
-    var = "THETA"
-    theta_ctrl_profile = create_profile(ctrl_input_data, var, grid, lat_range, lon_range, timeseries =False)
-    #theta_lens_profile = create_profile(lens_input_data, var, grid, lat_range, lon_range, timeseries =False)
-    theta_wind_profile = create_profile(wind_input_data, var, grid, lat_range, lon_range, timeseries =False)
-    #theta_temp_profile = create_profile(temp_input_data, var, grid, lat_range, lon_range, timeseries =False)
-    
-    # create the profile
-    var = "SALT"
-    ctrl_profile = create_profile(ctrl_input_data, var, grid, lat_range, lon_range,timeseries = False)
-    #lens_profile = create_profile(lens_input_data, var, grid, lat_range, lon_range,timeseries = False)
-    wind_profile = create_profile(wind_input_data, var, grid, lat_range, lon_range,timeseries = False)
-    #temp_profile = create_profile(temp_input_data, var, grid, lat_range, lon_range,timeseries = False)
-    
-    z = ctrl_input_data.Z.values
-    
-    # create subplots with each variable on a new line
-    fig, axs = plt.subplots(nrows=1, ncols=2, gridspec_kw={"hspace": 0.5, "wspace": 0.4})
+    profiles = [create_profile(data, var, grid, lat_range, lon_range, timeseries = False) for data in input_data]
+    z = input_data[0].Z.values
       
-    axs = axs.flatten()
+    for i, profile in enumerate(profiles):
+        ax.plot(profile, z, color=colors[i])
     
-    axs[0].plot(theta_ctrl_profile, z, color = 'seagreen')
-    #axs[0].plot(theta_lens_profile, z, color = 'orchid')
-    axs[0].plot(theta_wind_profile, z, '--', color = 'cornflowerblue')
-    #axs[0].plot(theta_temp_profile, z, '--',color = 'orange')
-    axs[0].set_title("THETA")
-    axs[0].set_ylim([-800, 0])
-    axs[0].set_ylabel("Depth")
-    axs[0].set_xlabel("Theta (°C)")
+    if var == "THETA":
+        ax.set_xlim([-2, 2])
+        ax.set_xticks(np.arange(-2, 2, 1))
+        ax.set_ylim([-1000, 0])
+    else:
+        ax.set_xlim([33, 35])
+        ax.set_xticks(np.arange(33.5, 35, 0.5))
+        ax.set_ylim([-600, 0])
+    ax.set_title(period)
+    ax.grid(alpha=0.8)
+    if period != "1920-1950":
+        ax.get_yaxis().set_ticklabels([])
     
-    axs[1].plot(ctrl_profile, z, color = 'seagreen')
-    #axs[1].plot(lens_profile, z, color = 'orchid')
-    axs[1].plot(wind_profile, z, '--', color = 'cornflowerblue')
-    #axs[1].plot(temp_profile, z, '--', color = 'orange')
-    axs[1].set_title("Salinity")
-    plt.ylim([-800, 0])
-    plt.xlabel("Salinity")
-
-    plt.subplots_adjust(right=0.7)
-    plt.legend(["original","New Compiler"], bbox_to_anchor=(1.04, 1), loc="center left")
-
-    fig.savefig("profile_compiled_"+var+".png")
+def main():
+    experiment_names = ["pre-industrial", "RCP8.5", "thermodynamic f.", "wind f."]
+    fig, axs = plt.subplots(nrows=1, ncols=3, gridspec_kw={"hspace": 0.05, "wspace": 0.05})
+    #axs = axs.flatten()
+    var = "SALT"
+    plot_period(axs[0], "1920-1950", var)
+    plot_period(axs[1], "2000-2030", var)
+    plot_period(axs[2], "2070-2100", var)
+    plt.subplots_adjust(bottom=0.3, wspace=0.33)
+    axs[0].set_ylabel("Depth (m)")
+    axs[1].legend(labels=experiment_names,loc='upper center', 
+             bbox_to_anchor=(0.5, -0.2),fancybox=False, shadow=False, ncol=4)
+    if var == "THETA":
+        plt.suptitle("Potential temperature (degC)")
+    else:
+        plt.suptitle("Salinity")
+    fig.savefig(f"profile_{var}.png")
     plt.show()
         
 
