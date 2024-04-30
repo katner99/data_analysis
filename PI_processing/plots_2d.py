@@ -2,7 +2,7 @@ import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import numpy as np
-from plots import zoom_shelf
+from plots import zoom_shelf, pretty_labels
 
 def comparison(data, set_up, graph_params, graph_params_anom, experiment, title, file_out, save=True, show=False, linearity=False, residual = None, zoom = None):
     """
@@ -29,9 +29,8 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
 
     total = len(data)
     
-    fig, axs = plt.subplots(nrows=total, ncols=total, gridspec_kw={"hspace": 0.05, "wspace": 0.04}, figsize=(15, 15))
+    fig, axs = plt.subplots(nrows=total, ncols=total, gridspec_kw={"hspace": 0.05, "wspace": 0.04}, figsize=(15, 10))
     axs = axs.flatten()
-
 
     if linearity:
         position = total-1
@@ -40,19 +39,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
 
         fig.colorbar(cs, ax=axs[position], ticks=np.arange(-10, 10.1, 10))
         axs[position].set_title("Residual", fontsize=graph_params["font_size"], weight="bold")
-
-        lon_ticks = axs[position].get_xticks() - 360
-        lon_labels = []
-        for x in lon_ticks:
-            lon_labels.append(lon_label(x,2))
-        axs[position].set_xticklabels(lon_labels)
-        axs[position].tick_params(axis='x', labelrotation=45)
-        
-        lat_ticks = axs[position].get_yticks()
-        lat_labels = []
-        for y in lat_ticks:
-            lat_labels.append(lat_label(y,2))
-        axs[position].set_yticklabels(lat_labels)
+        pretty_labels(axs[position])
     
     for i in range(total):
         # MAIN GRAPH
@@ -70,20 +57,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
         cs_diag = contour_func(axs[diagonal], data[i], set_up, graph_params, hide_ticks_x, hide_ticks_y)
         zoom_shelf(axs[diagonal], zoom)
         axs[diagonal].set_title(experiment[i], fontsize=graph_params["font_size"], weight="bold")
-        
-        if hide_ticks_y == False:
-            for y in lat_ticks:
-                lat_labels.append(lat_label(y,2))
-            axs[diagonal].set_yticklabels(lat_labels)
-
-        if hide_ticks_x == False:
-            lon_ticks = axs[diagonal].get_xticks() - 360
-            lon_labels = []
-            for x in lon_ticks:
-                lon_labels.append(lon_label(x,2))
-            axs[diagonal].set_xticklabels(lon_labels)
-            axs[diagonal].tick_params(axis='x', labelrotation=45)
-            axs[diagonal].set_xticklabels(lon_labels[:-1] + [""])
+        pretty_labels(axs[diagonal])
 
         # ANOMALY
         for j in range(i+1, total):
@@ -102,22 +76,8 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
             cs_anom = contour_func(axs[anomaly], data[j] - data[i], set_up, graph_params_anom, hide_ticks_x, hide_ticks_y)
             
             zoom_shelf(axs[anomaly], zoom)
+            pretty_labels(axs[anomaly])
             
-            if anomaly % total == 0:
-                lat_ticks = axs[anomaly].get_yticks()
-                lat_labels = []
-                for y in lat_ticks:
-                    lat_labels.append(lat_label(y,2))
-                axs[anomaly].set_yticklabels(lat_labels)
-            
-            if hide_ticks_x == False:
-                lon_ticks = axs[anomaly].get_xticks() - 360
-                lon_labels = []
-                for x in lon_ticks:
-                    lon_labels.append(lon_label(x,2))
-                axs[anomaly].set_xticklabels(lon_labels[:-1] + [""])
-                axs[anomaly].tick_params(axis='x', labelrotation=45)
-
             axs[anomaly].text(
                 0.5,
                 0.85,

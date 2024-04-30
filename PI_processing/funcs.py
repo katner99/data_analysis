@@ -191,7 +191,7 @@ def read_variable(input_data, var, grid, depth_range=None):
 
 
 def create_profile(
-    input_data, var, grid, lat_range, lon_range, time=12, timeseries=True
+    input_data, var, grid, lat_range, lon_range, time=12, timeseries=False
 ):
     # Check if input_data contains 12 years of data
     if len(input_data.time.values) != 12:
