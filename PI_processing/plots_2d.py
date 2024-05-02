@@ -37,7 +37,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
         cs = contour_func(axs[position], residual, set_up, graph_params_anom)
         zoom_shelf(axs[position], zoom)
 
-        fig.colorbar(cs, ax=axs[position], ticks=np.arange(-10, 10.1, 10))
+        fig.colorbar(cs, ax=axs[position], ticks=np.arange(-1, 1.1, 1))
         axs[position].set_title("Residual", fontsize=graph_params["font_size"], weight="bold")
         pretty_labels(axs[position])
     
@@ -95,19 +95,21 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
     cbar_ax = fig.add_axes([0.05, 0.525, 0.02, 0.4])
     cbar = plt.colorbar(cs_diag, cax=cbar_ax, orientation='vertical')
     cbar.set_ticks(ticks)
+    cbar.set_label("Potential Temperature (°C)")
     cbar.ax.yaxis.set_ticks_position('left')
 
     ticks=np.arange(graph_params_anom["low_val"], graph_params_anom["high_val"]+0.1, graph_params_anom["interval"])
     cbar_ax = fig.add_axes([0.05, 0.1, 0.02, 0.4])
     cbar = plt.colorbar(cs_anom, cax=cbar_ax, orientation='vertical')
     cbar.set_ticks(ticks)
+    cbar.set_label("Potential Temperature Anomaly (°C)")
     cbar.ax.yaxis.set_ticks_position('left')
 
     fig.suptitle(title, fontsize=16)
 
     # save figure
     if save == True:
-        fig.savefig(file_out)
+        fig.savefig(file_out, bbox_inches='tight')
 
     # show figure
     if show == True:

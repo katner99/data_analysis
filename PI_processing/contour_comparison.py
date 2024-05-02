@@ -12,7 +12,7 @@ def main():
     # set up the variables you need
     var = "THETA"
     save = True
-    show = True
+    show = False
     period = "2070-2100"
 
     # load up the file paths for the monster

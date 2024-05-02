@@ -130,7 +130,7 @@ def config_timeseries(var, data, experiments, ensemble):
             "data": data,
             "experiments": experiments,
             "ensemble_members": ensemble,
-            "ylabel": "Temperature (degC)",
+            "ylabel": "Temperature on continental shelf, 200-700m (°C)",
             "time": 181 * 12,
             "xlabel": np.arange(1921, 2100, 10),
             "x_lim": [12, (2099 - 1920) * 12],
@@ -176,7 +176,7 @@ def config_comparison(var, input_data, grid, period):
         anom = 1.5
         min_val = -2
         max_val = 2.1
-        title = f"Average temperature between 200 and 700m {period}"
+        title = f"Average temperature between {period}, 200-700m (°C)"
         interval = 1
         interval_anom = 0.5
     # sea ice thickness

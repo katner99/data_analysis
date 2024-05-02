@@ -43,9 +43,13 @@ def main():
     fig, ax = plt.subplots(figsize=(15, 10), sharex=True)
 
     plot_timeseries_comparison(ax, data, experiments, ensemble, plot_info)
-
-    fig.savefig(file_out)
-    plt.show()
+    ax.set_title("Temperature normalised to the pre-industrial mean", fontsize = 16, fontweight = 'bold')
+    ax.axvline((2000-1920)*12, color = 'dodgerblue', linewidth=2, alpha=0.5)
+    ax.axvline((1997-1920)*12, color = 'orange', linewidth=2, alpha=0.5)
+    plt.text((1996-1920)*12, -1.3, "thermodynamic scenario \n diverges from pre-industrial scenario ", horizontalalignment='right', color = "orange", fontsize = 14, fontweight = "bold")
+    plt.text((2001-1920)*12, -1.3, " wind scenario diverges from \n pre-industrial scenario", color="dodgerblue", fontsize = 14, fontweight = "bold")
+    fig.savefig(file_out, bbox_inches='tight')
+    #plt.show()
 
 
 if __name__ == "__main__":

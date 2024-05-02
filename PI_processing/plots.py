@@ -232,9 +232,10 @@ def plot_timeseries_comparison(
     - ax: Axis object representing the main plot
     - all_means: List containing the means of all experiments' data
     """
-    colors = ["forestgreen", "orangered", "purple", "dodgerblue"]
+    colors = ["slategrey", "deeppink", "orange", "dodgerblue"]
     experiment_full = plot_info["experiment_full"]
     all_means = []
+    size = 16
 
     if plot_info.get("warming", False):
         ctrl_mean = np.nanmean(
@@ -325,7 +326,7 @@ def plot_timeseries_comparison(
                 smoothed_min,
                 smoothed_max,
                 color=colors[exp_idx],
-                alpha=0.3,
+                alpha=0.25,
             )
 
         all_means.append(experiment_mean[:])
@@ -335,10 +336,10 @@ def plot_timeseries_comparison(
             all_means[0] + all_means[1] - all_means[2] - all_means[3],
             12 * plot_info.get("smooth", 0),
         )
-        ax.plot(linearity, color="black", label="linearity")
+        ax.plot(linearity[(200-1920)*12:], color="black", LineStyle="dashed", label="non-linearity")
         ax.axhline(0, color="grey")
 
-    ax.set_ylabel(plot_info["ylabel"], fontsize=14)
+    ax.set_ylabel(plot_info["ylabel"], fontsize = size)
     ax.set_xticks(
         np.arange(
             6 * plot_info.get("smooth", 0),
@@ -346,14 +347,14 @@ def plot_timeseries_comparison(
             120,
         )
     )
-    ax.set_xticklabels(plot_info["xlabel"].astype(str), rotation=45)
+    ax.set_xticklabels(plot_info["xlabel"].astype(str), rotation=45, fontsize = size)
     ax.set_xlim(plot_info["x_lim"])
-    ax.set_title(plot_info.get("title"))
-
+    ax.set_title(plot_info.get("title"), fontsize = size)
+    ax.tick_params(axis="y", labelsize=size)
     if plot_info.get("warming", False):
         ax.set_ylim([-1.6, 1.6])
 
-    ax.legend()
+    ax.legend(frameon=False, fontsize = size)
     ax.grid(alpha=0.8)
 
     return ax, all_means
