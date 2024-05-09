@@ -149,7 +149,7 @@ def config_timeseries(var, data, experiments, ensemble):
     return plot_info
 
 
-def config_comparison(var, input_data, grid, period):
+def config_comparison(var, input_data, grid, period = None, var_name = None):
     """
     Configures plotting parameters and data for a comparison plot of various oceanographic variables.
 
@@ -164,95 +164,121 @@ def config_comparison(var, input_data, grid, period):
     - graph_params (dict): Dictionary containing parameters for the main plot.
     - graph_params_anom (dict): Dictionary containing parameters for the anomaly plot.
     """
-    # temperature
-    if var == "THETA":
-        depth_range = [
-            find_nearest(input_data[0]["Z"].values, -200),
-            find_nearest(input_data[0]["Z"].values, -700),
-        ]
-        data = [read_variable(input, var, grid, depth_range) for input in input_data]
-        color_scheme = "coolwarm"
-        color_sceme_anom = color_scheme
-        anom = 1.5
-        min_val = -2
-        max_val = 2.1
-        title = f"Average temperature between 200 and 700m {period}"
-        interval = 1
-        interval_anom = 0.5
-    # sea ice thickness
-    elif var == "SIheff":
-        data = [read_variable(input, var, grid) for input in input_data]
-        color_scheme = "jet"
-        anom = 1
-        min_val = 0
-        max_val = 2
-        interval = 0.25
-        interval_anom = 0.25
-        title = f"Sea ice thickness (m) {period}"
-        color_sceme_anom = "PRGn_r"
-    # sea ice tickness
-    elif var in ["SIheff", "oceFWflx", "SIfwmelt", "SIfwfrz", "EXFvwind", "oceQnet"]:
-        data = [
-            read_variable(input, var, grid) * 3600 * 24 * 365 / 1000
-            for input in input_data
-        ]
-        color_scheme = "PRGn_r"
-        anom = 1.5
-        min_val = -5
-        max_val = 5
-        title = f"Freshwater fluxes m/yr {period}"
-        color_sceme_anom = "PRGn_r"
+    if var == "trend":
+        if var_name == "oceFWflx":
+            data = [-input[var].values*((3600*24*365)**2)/100000 for input in input_data]
+            pval = [input["pvalue"].values for input in input_data]
+            color_scheme = "PRGn_r"
+            anom = 15
+            min_val = -20
+            max_val = 20
+            print(min_val, max_val)
+            title = f"Freshwater Fluxes (m/yr/century)"
+            interval = 5
+            interval_anom = 5
+            color_sceme_anom = "PRGn_r"
+        else:
+            data = [input[var].values*((3600*24*365)**2)/100000 for input in input_data]
+            pval = [input["pvalue"].values for input in input_data]
+            color_scheme = "PRGn_r"
+            anom = 15
+            min_val = -20
+            max_val = 20
+            print(min_val, max_val)
+            title = f"melt (m/yr/century)"
+            interval = 5
+            interval_anom = 5
+            color_sceme_anom = "PRGn_r"
 
-    # salinity
-    elif var == "SALT":
-        data = [read_variable(input, var, grid) for input in input_data]
-        color_scheme = "PRGn_r"
-        anom = 0.25
-        min_val = int(np.min(data[0]))
-        max_val = int(np.max(data[0])) + 1
-        title = f"Surface Salinity {period}"
-        interval = 1
-        interval_anom = 0.25
-        color_sceme_anom = "PRGn_r"
+        graph_params = {
+            "font_size": 12,
+            "low_val": min_val,
+            "high_val": max_val,
+            "interval": interval,
+            "color_scheme": color_scheme,
+            "step": 20,
+            "title": title,
+            "pvalue": pval
+        }
 
-    elif var == "SHIfwFlx":
-        data = [
-            -read_variable(input, var, grid) * 3600 * 24 * 30 * 10 ** (-3)
-            for input in input_data
-        ]
-        color_scheme = "rainbow"
-        color_sceme_anom = "PRGn_r"
-        anom = 25
-        min_val = 0
-        max_val = 76
-        title = f"ice shelf basal melt rate ({period}) (m.w.e./yr)"
-        interval = 20
-        interval_anom = 10
+    else:    
+        if var == "THETA":
+            depth_range = [
+                find_nearest(input_data[0]["Z"].values, -200),
+                find_nearest(input_data[0]["Z"].values, -700),
+            ]
+            data = [read_variable(input, var, grid, depth_range) for input in input_data]
+            color_scheme = "coolwarm"
+            color_sceme_anom = color_scheme
+            anom = 1.5
+            min_val = -2
+            max_val = 2.1
+            title = f"Average temperature between 200 and 700m {period}"
+            interval = 1
+            interval_anom = 0.5
+        # sea ice thickness
+        elif var == "SIheff":
+            data = [read_variable(input, var, grid) for input in input_data]
+            color_scheme = "jet"
+            anom = 1
+            min_val = 0
+            max_val = 2
+            interval = 0.25
+            interval_anom = 0.25
+            title = f"Sea ice thickness (m) {period}"
+            color_sceme_anom = "PRGn_r"
+        # sea ice tickness
+        elif var in ["SIheff", "oceFWflx", "SIfwmelt", "SIfwfrz", "EXFvwind", "oceQnet"]:
+            data = [
+                read_variable(input, var, grid) * 3600 * 24 * 365 / 1000
+                for input in input_data
+            ]
+            color_scheme = "PRGn_r"
+            anom = 1.5
+            min_val = -5
+            max_val = 5
+            title = f"Freshwater fluxes m/yr {period}"
+            color_sceme_anom = "PRGn_r"
 
-    elif var == "trend":
-        data = [input[var].values*((3600*24*365)**2)/100000 for input in input_data]
-        pval = [input["pvalue"].values for input in input_data]
-        color_scheme = "PRGn_r"
-        anom = 10
-        min_val = -15
-        max_val = 15
-        print(min_val, max_val)
-        title = f"Freshwater Fluxes (m/yr/century)"
-        interval = 5
-        interval_anom = 2
-        color_sceme_anom = "PRGn_r"
+        # salinity
+        elif var == "SALT":
+            data = [read_variable(input, var, grid) for input in input_data]
+            color_scheme = "PRGn_r"
+            anom = 0.25
+            min_val = int(np.min(data[0]))
+            max_val = int(np.max(data[0])) + 1
+            title = f"Surface Salinity {period}"
+            interval = 1
+            interval_anom = 0.25
+            color_sceme_anom = "PRGn_r"
+
+        elif var == "SHIfwFlx":
+            data = [
+                -read_variable(input, var, grid) * 3600 * 24 * 30 * 10 ** (-3)
+                for input in input_data
+            ]
+            color_scheme = "rainbow"
+            color_sceme_anom = "PRGn_r"
+            anom = 25
+            min_val = 0
+            max_val = 76
+            title = f"ice shelf basal melt rate ({period}) (m.w.e./yr)"
+            interval = 20
+            interval_anom = 10
+
+        graph_params = {
+            "font_size": 12,
+            "low_val": min_val,
+            "high_val": max_val,
+            "interval": interval,
+            "color_scheme": color_scheme,
+            "step": 20,
+            "title": title,
+        }
+            
 
     # graph parameters 1.333112e-05 -1.0214189e-06
-    graph_params = {
-        "font_size": 12,
-        "low_val": min_val,
-        "high_val": max_val,
-        "interval": interval,
-        "color_scheme": color_scheme,
-        "step": 20,
-        "title": title,
-        "pvalue": pval
-    }
+    
 
     graph_params_anom = {
         "font_size": 12,

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from plots import zoom_shelf, pretty_labels
 
-def comparison(data, set_up, graph_params, graph_params_anom, experiment, title, file_out, save=True, show=False, linearity=False, residual = None, zoom = None, pvalue = None):
+def comparison(data, set_up, graph_params, graph_params_anom, experiment, file_out, save=True, show=False, linearity=False, zoom = None):
     """
     Generate a grid of subplots for visual comparison of multiple datasets.
 
@@ -33,6 +33,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
     axs = axs.flatten()
 
     if linearity:
+        residual = data[0] + data[1] - data[2] - data[3]
         position = total-1
         cs = contour_func(axs[position], residual, set_up, graph_params_anom)
         zoom_shelf(axs[position], zoom)
@@ -55,7 +56,8 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
             hide_ticks_x = True
 
         cs_diag = contour_func(axs[diagonal], data[i], set_up, graph_params, hide_ticks_x, hide_ticks_y)
-        axs[diagonal].contourf(set_up["X"], set_up["Y"], pvalue[i], levels=[-np.inf, 0.05], colors='none', hatches=['....'], alpha=0)
+        if graph_params.get("pvalue", None):
+            axs[diagonal].contourf(set_up["X"], set_up["Y"], graph_params["pvalue"][i], levels=[-np.inf, 0.05], colors='none', hatches=['....'], alpha=0)
         
         zoom_shelf(axs[diagonal], zoom)
         axs[diagonal].set_title(experiment[i], fontsize=graph_params["font_size"], weight="bold")
@@ -105,7 +107,7 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, title,
     cbar.set_ticks(ticks)
     cbar.ax.yaxis.set_ticks_position('left')
 
-    fig.suptitle(title, fontsize=16)
+    fig.suptitle(graph_params["title"], fontsize=16)
 
     # save figure
     if save == True:

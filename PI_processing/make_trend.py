@@ -48,7 +48,7 @@ def calculate_trend(data, time):
 def main():
     experiment = str(sys.argv[1])
     ensemble_members = list(range(1, 10))  
-    var = "oceFWflx"
+    var = "SHIfwFlx"
 
     args_list = [(experiment, var, str(ens_member)) for ens_member in ensemble_members]
     
