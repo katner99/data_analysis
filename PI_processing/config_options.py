@@ -229,6 +229,19 @@ def config_comparison(var, input_data, grid, period):
         interval = 20
         interval_anom = 10
 
+    elif var == "trend":
+        data = [input[var].values*((3600*24*365)**2)/100000 for input in input_data]
+        pval = [input["pvalue"].values for input in input_data]
+        color_scheme = "PRGn_r"
+        anom = 10
+        min_val = -15
+        max_val = 15
+        print(min_val, max_val)
+        title = f"Freshwater Fluxes (m/yr/century)"
+        interval = 5
+        interval_anom = 2
+        color_sceme_anom = "PRGn_r"
+
     # graph parameters 1.333112e-05 -1.0214189e-06
     graph_params = {
         "font_size": 12,
@@ -238,6 +251,7 @@ def config_comparison(var, input_data, grid, period):
         "color_scheme": color_scheme,
         "step": 20,
         "title": title,
+        "pvalue": pval
     }
 
     graph_params_anom = {
