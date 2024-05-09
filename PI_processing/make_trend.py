@@ -38,7 +38,7 @@ def calculate_trend(data, time):
 
     for y in range(data.shape[1]):
         for x in range(data.shape[2]):
-            slope, r_value, p_value, _, _ = linregress(data[:, y, x], time)
+            slope, intercept, r_value, p_value, std_err = linregress(time, data[:, y, x])
             slopes[y, x] = slope
             r_values[y, x] = r_value
             p_values[y, x] = p_value
