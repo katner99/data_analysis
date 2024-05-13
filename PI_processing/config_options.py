@@ -41,6 +41,9 @@ sv = 10 ** (-6)
 
 lat_bin, lon_bin, time_bin = 192, 288, 365
 
+lon_slices = [238, 250, 243, 255]
+lat_slices = [-74, -69.5]
+
 days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
 slice_ranges = {
@@ -166,28 +169,28 @@ def config_comparison(var, input_data, grid, period = None, var_name = None):
     """
     if var == "trend":
         if var_name == "oceFWflx":
-            data = [-input[var].values*((3600*24*365)**2)/100000 for input in input_data]
+            data = [-input[var].values*((3600*24*365)**2)/10 for input in input_data]
             pval = [input["pvalue"].values for input in input_data]
             color_scheme = "PRGn_r"
-            anom = 15
-            min_val = -20
-            max_val = 20
+            anom = 100000
+            min_val = -250000
+            max_val = 250000
             print(min_val, max_val)
             title = f"Freshwater Fluxes (m/yr/century)"
-            interval = 5
-            interval_anom = 5
+            interval = 50000
+            interval_anom = 50000
             color_sceme_anom = "PRGn_r"
         else:
-            data = [input[var].values*((3600*24*365)**2)/100000 for input in input_data]
+            data = [input[var].values*((3600*24*365)**2)/10 for input in input_data]
             pval = [input["pvalue"].values for input in input_data]
             color_scheme = "PRGn_r"
-            anom = 15
-            min_val = -20
-            max_val = 20
+            anom = 100000
+            min_val = -250000
+            max_val = 250000
             print(min_val, max_val)
             title = f"melt (m/yr/century)"
-            interval = 5
-            interval_anom = 5
+            interval = 50000
+            interval_anom = 50000
             color_sceme_anom = "PRGn_r"
 
         graph_params = {
@@ -213,7 +216,7 @@ def config_comparison(var, input_data, grid, period = None, var_name = None):
             anom = 1.5
             min_val = -2
             max_val = 2.1
-            title = f"Average temperature between 200 and 700m {period}"
+            title = f"Average potential temperature between 200 and 700m {period}"
             interval = 1
             interval_anom = 0.5
         # sea ice thickness
