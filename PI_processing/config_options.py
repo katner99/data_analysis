@@ -180,7 +180,7 @@ def config_comparison(var, input_data, grid, period = None, var_name = None):
             interval = 50000
             interval_anom = 50000
             color_sceme_anom = "PRGn_r"
-        else:
+        elif var_name == "SHIfwFlx":
             data = [input[var].values*((3600*24*365)**2)/10 for input in input_data]
             pval = [input["pvalue"].values for input in input_data]
             color_scheme = "PRGn_r"
@@ -191,6 +191,17 @@ def config_comparison(var, input_data, grid, period = None, var_name = None):
             title = f"melt (m/yr/century)"
             interval = 50000
             interval_anom = 50000
+            color_sceme_anom = "PRGn_r"
+
+        elif var_name == "SALT":
+            data = [input[var].values[:,:,0]*3600*24*365*100 for input in input_data]
+            color_scheme = "PRGn_r"
+            anom = 0.25
+            min_val = int(np.min(data[0]))
+            max_val = int(np.max(data[0])) + 1
+            title = f"Salinity trend per century"
+            interval = 1
+            interval_anom = 0.25
             color_sceme_anom = "PRGn_r"
 
         graph_params = {

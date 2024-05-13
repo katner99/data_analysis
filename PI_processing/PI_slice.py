@@ -11,15 +11,17 @@ from funcs import find_nearest
 from directories_and_paths import *
 from mitgcm_python.grid import Grid
 
+from config_options import lat_slices, lon_slices
+
 def main():
-    period = "2070-2100"
-    var = "salt"
+    var = "SALT"
     save = True
     show = True
+    filepaths = [
+        f"{output_path}{exp}_files_temp/{var}_trend.nc"
+        for exp in ["CTRL", "LENS", "WIND", "TEMP"]
+    ]
     
-    # load up the file paths for the monster, needed 4
-    filepaths = [output_path + "average_" + ens + "_"+period+".nc" for ens in ["CTRL", "LENS", "WIND", "TEMP"]]
-    # check if the input files exist
     for filepath in filepaths:
         try:
             open(filepath)
@@ -30,77 +32,59 @@ def main():
 
     # load up the input data
     input_data = [xr.open_dataset(filepath, decode_times = False) for filepath in filepaths]
+    temp_data = xr.open_dataset(f"{output_path}average_CTRL_1920-1950.nc")
     
+    sliced_data = temp_data["maskC"].sel(XC = lon_slices[3], method = "nearest")
+    mask = sliced_data.sel(YC = slice(lat_slices[0], lat_slices[1]))
+
     # read in the general variables (these should be the same between the ensembles
     #[lat, lon, ice_mask_temp, depth] = [input_data[0][param].values for param in ["YC", "XC", "maskC", "Depth"]]
     #ice_mask = ice_mask_temp[0,:,:]
 
     grid = Grid(grid_filepath)
 
-    lat_range = [find_nearest(input_data[0].YC.values, -71.5), find_nearest(input_data[0].YC.values, -70)]
-    lon_range = find_nearest(input_data[0].XC.values, 255)
-    print(lon_range)
-    print(len(input_data[0].XC.values))
-    z = input_data[0].Z.values
-    lat = input_data[0]["YC"][lat_range[0]:lat_range[1]].values
-    ice_mask = input_data[0].maskC.values[:,lat_range[0]:lat_range[1],lon_range]
+    z = input_data[0].depth.values
+    lat = input_data[0]["lat"]
     color_scheme = "PRGn"
        
     # load the variables and calculate the average over the year
     days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-        
-    ctrl_vvel = np.average(input_data[0].UVEL.values[:,:,lat_range[0]:lat_range[1],lon_range], axis = 0, weights = days_in_month)
-    lens_vvel = np.average(input_data[1].UVEL.values[:,:,lat_range[0]:lat_range[1],lon_range], axis = 0, weights = days_in_month)
-    wind_vvel = np.average(input_data[2].UVEL.values[:,:,lat_range[0]:lat_range[1],lon_range], axis = 0, weights = days_in_month)
-    temp_vvel = np.average(input_data[3].UVEL.values[:,:,lat_range[0]:lat_range[1],lon_range], axis = 0, weights = days_in_month)
-    
-    ctrl_vvel[ice_mask == 0] = np.nan
-    lens_vvel[ice_mask == 0] = np.nan
-    wind_vvel[ice_mask == 0] = np.nan
-    temp_vvel[ice_mask == 0] = np.nan
-        
-    low_val = -0.05
-    high_val = -low_val
+
+    data_um = [input.trend.values[:,:,3] for input in input_data] 
+    data = [np.ma.masked_where(mask == 0, data_idx) for data_idx in data_um]  
+    print(np.shape(data[0]), np.shape(mask))
+
+    data_um = [input.pvalue.values[:,:,3] for input in input_data] 
+    pvalue = [np.ma.masked_where(mask == 0, data_idx) for data_idx in data_um]  
+      
+    low_val = -5e-06
+    high_val = 5e-06
+    print(low_val, high_val)
     step = 15
     font_size = 16
         
     # create subplots with each variable on a new line
-    fig, axs = plt.subplots(nrows=1, ncols=4, gridspec_kw={"hspace": 0.5, "wspace": 0.4}, figsize=(15,5))
+    fig, axs = plt.subplots(nrows=1, ncols=4, gridspec_kw={"hspace": 0.05, "wspace": 0.05}, figsize=(25,8))
         
     axs = axs.flatten()
 
-    # PI_ctrl
-    cs = axs[0].contourf(lat, z, ctrl_vvel, cmap=color_scheme, extend="both", levels=np.linspace(low_val, high_val, step))
-    axs[0].set_title("Pre-industrial", weight="bold", fontsize = font_size)
-    axs[0].set_ylabel("Depth (m)", fontsize = font_size)
-    axs[0].set_xlabel("Latitude", fontsize = font_size)
-    axs[0].set_ylim([-2000, 0])
-        
-    # LENS
-    cs = axs[1].contourf(lat, z, lens_vvel, cmap=color_scheme, extend="both", levels=np.linspace(low_val, high_val, step))
-    axs[1].set_title("high emissions", weight="bold", fontsize = font_size)
-    axs[1].set_xlabel("Latitude", fontsize = font_size)
-    axs[1].set_ylim([-2000, 0])
-        
-    # WIND
-    cs = axs[2].contourf(lat, z, wind_vvel, cmap=color_scheme, extend="both", levels=np.linspace(low_val, high_val, step))
-    axs[2].set_title("Winds", weight="bold", fontsize = font_size)
-    axs[2].set_xlabel("Latitude", fontsize = font_size)
-    axs[2].set_ylim([-2000, 0])
-
-    # TEMP
-    cs = axs[3].contourf(lat, z, temp_vvel, cmap=color_scheme, extend="both", levels=np.linspace(low_val, high_val, step))
-    axs[3].set_title("Thermodynamic", weight="bold", fontsize = font_size)
-    axs[3].set_xlabel("Latitude", fontsize = font_size)
-    axs[3].set_ylim([-2000, 0])
-        
+    for i in range(4):
+        cs = axs[i].contourf(lat, z, data[i], cmap=color_scheme, extend="both", levels=np.linspace(low_val, high_val, step))
+        axs[i].contourf(lat, z, pvalue[i], levels=[-np.inf, 0.01], colors='none', hatches=['..'], alpha=0)
+        axs[i].set_title(experiment[i], weight="bold", fontsize = font_size)
+        axs[i].set_xlabel("Latitude", fontsize = font_size)
+        axs[i].set_ylim([-1000, 0])
+        if i > 0:
+            axs[i].get_yaxis().set_visible(False)
+        axs[i].set_aspect("auto", adjustable="box")
+    axs[0].set_ylabel("Depth (m)", fontsize = font_size)   
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    fig.colorbar(cs, cax=cbar_ax, ticks = np.arange(-0.5, 0.5, 0.025))
+    fig.colorbar(cs, cax=cbar_ax, ticks = np.arange(low_val, high_val, 2.5e-6))
         
-    plt.suptitle("Undercurrent 4 "+period, fontsize = font_size, weight = "bold")
+    plt.suptitle("Salinity trend per cetury across 118W", fontsize = font_size, weight = "bold")
         
-    fig.savefig("underway_slice"+period+"_4.png")
+    fig.savefig("salt_trend_undercurrent_4.png")
     plt.show()
         
     

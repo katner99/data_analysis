@@ -15,7 +15,7 @@ def main():
     show = True
 
     if var in ["trend", "pvalue"]:
-        var_name = "SHIfwFlx"
+        var_name = "SALT"
         filepaths = [
             f"{output_path}{exp}_files_temp/{var_name}_trend.nc"
             for exp in ["CTRL", "LENS", "WIND", "TEMP"]

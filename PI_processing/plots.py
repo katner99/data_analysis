@@ -27,7 +27,7 @@ def pretty_labels(ax):
     lon_labels = []
     for x in lon_ticks:
         lon_labels.append(lon_label(x, 2))
-    ax.set_xticklabels(lon_labels)
+    ax.set_xticklabels(lon_labels[:-1])
     ax.tick_params(axis="x", labelrotation=45)
     lat_ticks = ax.get_yticks()
     lat_labels = []
