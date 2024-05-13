@@ -12,22 +12,28 @@ def main():
     # set up the variables you need
     var = "trend"
     save = True
+<<<<<<< HEAD
     show = False
     period = "2070-2100"
+=======
+    show = True
+>>>>>>> develop
 
     if var in ["trend", "pvalue"]:
-        val = "oceFWflx"
+        var_name = "SALT"
         filepaths = [
-            f"{output_path}{exp}_files_temp/{val}_trend.nc"
+            f"{output_path}{exp}_files_temp/{var_name}_trend.nc"
             for exp in ["CTRL", "LENS", "WIND", "TEMP"]
         ]
+        file_out = f"mega_comparison_{var}_{var_name}.png"
     else:
-        # load up the file paths for the monster
+        period = "2070-2100"
         filepaths = [
             output_path + "average_" + ens + "_" + period + ".nc"
             for ens in ["CTRL", "LENS", "WIND", "TEMP"]
         ]
-    # check if the input files exist
+        file_out = f"mega_comparison{var}_{period}.png"
+
     for filepath in filepaths:
         try:
             open(filepath)
@@ -36,41 +42,33 @@ def main():
 
     experiment = ["pre-industrial", "RCP 8.5", "wind f.", "thermo. f."]
 
-    # load up the input data
     input_data = [
         xr.open_dataset(filepath, decode_times=False) for filepath in filepaths
     ]
 
-    # read in the general variables (these should be the same between the ensembles
+    grid = Grid(grid_filepath)
+
     if var in ["trend", "pvalue"]:
         set_up_data = xr.open_dataset(f"{output_path}average_CTRL_1920-1950.nc", decode_times=False)
         set_up = read_mask(set_up_data)
+        [data, graph_params, graph_params_anom] = config_comparison(var, input_data, grid, var_name = var_name)
+
     else:
         set_up = read_mask(input_data[0])
+        [data, graph_params, graph_params_anom] = config_comparison(var, input_data, grid, period = period)
 
-    grid = Grid(grid_filepath)
-
-    [data, graph_params, graph_params_anom] = config_comparison(
-        var, input_data, grid, period
-    )
-
-    file_out = "mega_comparison" + var + "_" + val + ".png"
-
-    residual = data[0] + data[1] - data[2] - data[3]
-
+    
     comparison(
         data,
         set_up,
         graph_params,
         graph_params_anom,
         experiment,
-        graph_params["title"],
         file_out,
         save,
         show,
         True,
-        residual,
-        pvalue = graph_params["pvalue"]
+        zoom = "ice_shelf",
     )
 
 
