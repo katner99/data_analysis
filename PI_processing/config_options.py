@@ -26,6 +26,7 @@ Variables:
 import xarray as xr
 import numpy as np
 from mitgcm_python.grid import Grid
+import matplotlib
 from funcs import find_nearest, read_variable
 from directories_and_paths import grid_filepath
 
@@ -168,29 +169,77 @@ def config_comparison(var, input_data, grid, period = None, var_name = None):
     - graph_params_anom (dict): Dictionary containing parameters for the anomaly plot.
     """
     if var == "trend":
-        if var_name == "oceFWflx":
-            data = [-input[var].values*((3600*24*365)**2)/10 for input in input_data]
-            pval = [input["pvalue"].values for input in input_data]
+
+        if var_name == "SALT":
+            data = [input[var].values[:,:,0]*3600*24*365*100 for input in input_data]
             color_scheme = "PRGn_r"
-            anom = 100000
-            min_val = -250000
-            max_val = 250000
+            anom = 0.25
+            min_val = int(np.min(data[0]))
+            max_val = int(np.max(data[0])) + 1
+            title = f"Salinity trend per century"
+            interval = 1
+            interval_anom = 0.25
+            color_sceme_anom = "PRGn_r"
+        elif var_name in ["oceFWflx", "SIfwfrz", "SIfwmelt"]:
+            data = [input[var].mean(dim="ensemble_member").values*100 for input in input_data]
+            pvalue = [input["pvalue"] for input in input_data]
+            result = []
+
+            # Loop through each array in pval
+            for pvalue_array in pvalue:
+                # Get the dimensions
+                ensemble_members, lat, lon = pvalue_array.shape
+                
+                # Apply the condition
+                condition_met = np.sum(pvalue_array < 0.05, axis=0) >= 5
+                
+                # Create binary array based on the condition
+                binary_array = np.where(condition_met, 0, 1)
+                
+                # Append the result to the result list
+                result.append(binary_array)
+
+            pval = result
+            color_scheme = "PRGn_r"
+            anom = 1
+            min_val = -2
+            max_val = 2
             print(min_val, max_val)
             title = f"Freshwater Fluxes (m/yr/century)"
-            interval = 50000
-            interval_anom = 50000
+            interval = 0.5
+            interval_anom = 0.25
             color_sceme_anom = "PRGn_r"
-        elif var_name == "SHIfwFlx":
-            data = [input[var].values*((3600*24*365)**2)/10 for input in input_data]
-            pval = [input["pvalue"].values for input in input_data]
+        elif var_name == "SIheff":
+            data = [input[var].mean(dim="ensemble_member").values*100 for input in input_data]
+            pval = [input["pvalue"].max(dim="ensemble_member").values for input in input_data]
             color_scheme = "PRGn_r"
-            anom = 100000
-            min_val = -250000
-            max_val = 250000
+            anom = 1
+            min_val = np.min(data[1])
+            max_val = -np.min(data[1])
+            print(min_val, max_val)
+            title = f"Sea Ice thickness trend"
+            interval = 0.5
+            interval_anom = 0.25
+            color_sceme_anom = "PRGn_r"
+            
+        elif var_name == "SHIfwFlx":
+            print("in")
+            data = [-input[var].mean(dim="ensemble_member").values*100 for input in input_data]
+            pval = [input["pvalue"].max(dim="ensemble_member").values for input in input_data]
+            c_purp = matplotlib.colors.colorConverter.to_rgba('purple')
+            c_red = matplotlib.colors.colorConverter.to_rgba('orchid')
+            c_blue= matplotlib.colors.colorConverter.to_rgba('skyblue')
+            c_super= matplotlib.colors.colorConverter.to_rgba('steelblue')
+            c_white_trans = matplotlib.colors.colorConverter.to_rgba('white',alpha = 0.0)
+            cmap_rb = matplotlib.colors.LinearSegmentedColormap.from_list('rb_cmap',[c_super, c_blue,c_white_trans,c_red, c_purp],512)
+            color_scheme = cmap_rb
+            anom = 10
+            min_val = -6
+            max_val = 6
             print(min_val, max_val)
             title = f"melt (m/yr/century)"
-            interval = 50000
-            interval_anom = 50000
+            interval = 2.5
+            interval_anom = 5
             color_sceme_anom = "PRGn_r"
 
         elif var_name == "SALT":
@@ -251,6 +300,8 @@ def config_comparison(var, input_data, grid, period = None, var_name = None):
             anom = 1.5
             min_val = -5
             max_val = 5
+            interval = 0.25
+            interval_anom = 0.25
             title = f"Freshwater fluxes m/yr {period}"
             color_sceme_anom = "PRGn_r"
 
