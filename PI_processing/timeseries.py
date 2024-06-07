@@ -18,9 +18,6 @@ the plot.
 Usage:
 - Run the script to generate the time series comparison plot.
 """
-import matplotlib
-
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 from funcs import read_timeseries
@@ -43,12 +40,16 @@ def main():
     fig, ax = plt.subplots(figsize=(15, 10), sharex=True)
 
     plot_timeseries_comparison(ax, data, experiments, ensemble, plot_info)
-    ax.set_title("Temperature normalised to the pre-industrial mean", fontsize = 16, fontweight = 'bold')
-    ax.axvline((2000-1920)*12, color = 'dodgerblue', linewidth=2, alpha=0.5)
-    ax.axvline((1997-1920)*12, color = 'orange', linewidth=2, alpha=0.5)
-    plt.text((1996-1920)*12, -1.3, "thermodynamic scenario \n diverges from pre-industrial scenario ", horizontalalignment='right', color = "orange", fontsize = 14, fontweight = "bold")
-    plt.text((2001-1920)*12, -1.3, " wind scenario diverges from \n pre-industrial scenario", color="dodgerblue", fontsize = 14, fontweight = "bold")
-    fig.savefig(file_out, bbox_inches='tight', transparent=True)
+    ax.set_title("Potential temperature pre-industrial mean anomaly", fontsize = 16, fontweight = 'bold')
+    ax.axvline(935, color = 'black', linewidth=2, alpha=0.8)
+    ax.axvline(967, color = 'black', linewidth=2, alpha=0.8, LineStyle = 'dotted')
+    ax.axvline(1827, color = 'black', linewidth=2, alpha=0.8, LineStyle = 'dotted')
+    plt.text((1996-1920)*12, -1.4, "THERMO\n|| NONE", horizontalalignment='right', color = "black", fontsize = 12, fontweight = "bold")
+    plt.text((2003-1920)*12, -1.4, "WIND \n|| ALL", color="black", fontsize = 12, fontweight = "bold")
+    plt.text((2020-1920)*12, -1.4, "NONE \n|| ALL", color="black", fontsize = 12, fontweight = "bold")
+    plt.text((2070-1920)*12, -1.4, "THERMO\n|| ALL", horizontalalignment='right', color="black", fontsize = 12, fontweight = "bold")
+    
+    fig.savefig(file_out, bbox_inches='tight', transparent=False)
     #plt.show()
 
 

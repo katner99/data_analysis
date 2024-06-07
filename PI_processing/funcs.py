@@ -3,7 +3,6 @@ import sys
 import xarray as xr
 import os
 from mitgcm_python.utils import mask_3d, add_time_dim, z_to_xyz, apply_mask
-from config_options import lat_slices, lon_slices
 from directories_and_paths import *
 from scipy.interpolate import interp2d
 
@@ -32,6 +31,7 @@ def read_data(var, UC):
     - A mask is applied based on data from 'average_CTRL_1920-1950.nc' to restrict the data 
       to a specific geographical region defined by longitude and latitude slices.
     """
+    from config_options import lat_slices, lon_slices
     filepaths = [
         f"{output_path}{exp}_files_temp/{var}_trend.nc"
         for exp in ["CTRL", "LENS", "WIND", "TEMP"]

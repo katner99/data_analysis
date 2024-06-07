@@ -1,6 +1,3 @@
-import matplotlib
-
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 from matplotlib import animation
@@ -326,17 +323,20 @@ def plot_timeseries_comparison(
                 smoothed_min,
                 smoothed_max,
                 color=colors[exp_idx],
-                alpha=0.25,
+                alpha=0.175,
             )
 
         all_means.append(experiment_mean[:])
 
     if plot_info.get("linearity", False) or plot_info.get("percentage", False):
+        year_of_divergence = 1169
         linearity = moving_average(
             all_means[0] + all_means[1] - all_means[2] - all_means[3],
             12 * plot_info.get("smooth", 0),
         )
+        linearity[:935] = np.nan
         ax.plot(linearity, color="black", LineStyle="dashed", label="non-linearity")
+        ax.axvline(year_of_divergence, color="black", linewidth=2, LineStyle="dashdot")
         ax.axhline(0, color="grey")
 
     ax.set_ylabel(plot_info["ylabel"], fontsize = size)
