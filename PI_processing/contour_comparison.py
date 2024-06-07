@@ -10,27 +10,27 @@ import xarray as xr
 
 def main():
     # set up the variables you need
-    var = "trend"
+    var = "SIfwmelt"
     save = True
-<<<<<<< HEAD
-    show = False
-    period = "2070-2100"
-=======
     show = True
->>>>>>> develop
+    period = "2070-2100"
 
     if var in ["trend", "pvalue"]:
-        var_name = "SALT"
+        var_name = "SHIfwFlx"
         filepaths = [
-            f"{output_path}{exp}_files_temp/{var_name}_trend.nc"
+            f"{output_path}{exp}_files_temp/{var_name}_spread.nc"
             for exp in ["CTRL", "LENS", "WIND", "TEMP"]
         ]
         file_out = f"mega_comparison_{var}_{var_name}.png"
     else:
         period = "2070-2100"
+        # filepaths = [
+        #     output_path + "average_" + ens + "_" + period + ".nc"
+        #     for ens in ["CTRL", "LENS", "WIND", "TEMP"]
+        # ]
         filepaths = [
-            output_path + "average_" + ens + "_" + period + ".nc"
-            for ens in ["CTRL", "LENS", "WIND", "TEMP"]
+            f"{output_path}{ens}_ens07_noOBC/output/210001/MITgcm/output.nc"
+            for ens in ["CTRL","WIND", "TEMP"]
         ]
         file_out = f"mega_comparison{var}_{period}.png"
 
@@ -67,8 +67,7 @@ def main():
         file_out,
         save,
         show,
-        True,
-        zoom = "ice_shelf",
+        False,
     )
 
 
