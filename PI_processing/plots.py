@@ -144,8 +144,8 @@ def read_u_and_v(input_data, option="avg"):
 
 def zoom_shelf(ax, zoom):
     if zoom == "ice_shelf":
-        ax.set_ylim([-75.6, -70])
-        ax.set_xlim([235, 265])
+        ax.set_ylim([-75.6, -73])
+        ax.set_xlim([245, 262])
     elif zoom == "cont_shelf":
         ax.set_xlim([230, 265])
         ax.set_ylim([-75.5, -68])
@@ -336,7 +336,7 @@ def plot_timeseries_comparison(
             all_means[0] + all_means[1] - all_means[2] - all_means[3],
             12 * plot_info.get("smooth", 0),
         )
-        ax.plot(linearity[(200-1920)*12:], color="black", LineStyle="dashed", label="non-linearity")
+        ax.plot(linearity, color="black", LineStyle="dashed", label="non-linearity")
         ax.axhline(0, color="grey")
 
     ax.set_ylabel(plot_info["ylabel"], fontsize = size)

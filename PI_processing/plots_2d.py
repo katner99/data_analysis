@@ -3,6 +3,7 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import numpy as np
 from plots import zoom_shelf, pretty_labels
+from mitgcm_python.plot_utils.labels import lat_label, lon_label
 
 def comparison(data, set_up, graph_params, graph_params_anom, experiment, file_out, save=True, show=False, linearity=False, zoom = None):
     """
@@ -212,3 +213,52 @@ def trend_quiver_func(ax, u, v, time, set_up, timescale = 1200, key = True):
                 q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon],slope_u[lat, lon], slope_v[lat, lon], color='grey', scale = 25, width=0.003)
     if key:
         ax.quiverkey(q, 0.938, 0.495, 3, r'$3 \frac{m/s}{cent.}$', color='k', labelpos='E', coordinates='figure')
+
+def plot_contour(
+    ax, data, set_up, graph_params, title, hide_ticks_x=True, hide_ticks_y=True
+):
+    """
+    Plots a contour map on a given axis with specified data and parameters.
+
+    Parameters:
+    ax (matplotlib.axes.Axes): The axis on which to plot the contour map.
+    data (np.ndarray or xr.DataArray): The data to be contoured.
+    set_up (np.ndarray or xr.DataArray): The setup mask for the data.
+    graph_params (dict): A dictionary containing parameters for creating the contour plot, 
+                         including font size, value range, interval, step, and color scheme.
+    title (str): The title of the plot.
+    hide_ticks_x (bool, optional): If True, hides the x-axis ticks. Default is True.
+    hide_ticks_y (bool, optional): If True, hides the y-axis ticks. Default is True.
+
+    Returns:
+    cs (QuadContourSet): The contour set created by the plot.
+    """
+    cs = contour_func(ax, data, set_up, graph_params, hide_ticks_x, hide_ticks_y)
+    ax.set_xlim([230, 262])
+    ax.set_ylim([-75.6, -68])
+    ax.text(
+        0.5,
+        0.9,
+        title,
+        horizontalalignment="center",
+        transform=ax.transAxes,
+        bbox=dict(facecolor="white", alpha=0.9),
+    )
+    if hide_ticks_x == False:
+        ax.locator_params(axis="x", nbins=6)
+        lon_ticks = ax.get_xticks() - 360
+        lon_labels = []
+        for x in lon_ticks:
+            lon_labels.append(lon_label(x, 2))
+        ax.set_xticklabels(lon_labels[:-1] + [""])
+        ax.tick_params(axis="x", labelrotation=45)
+
+    if hide_ticks_y == False:
+        ax.locator_params(axis="y", nbins=5)
+        lat_ticks = ax.get_yticks()
+        lat_labels = []
+        for y in lat_ticks:
+            lat_labels.append(lat_label(y, 2))
+        ax.set_yticklabels(lat_labels)
+
+    return cs

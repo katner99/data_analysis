@@ -3,9 +3,57 @@ import sys
 import xarray as xr
 import os
 from mitgcm_python.utils import mask_3d, add_time_dim, z_to_xyz, apply_mask
+from config_options import lat_slices, lon_slices
 from directories_and_paths import *
 from scipy.interpolate import interp2d
 
+
+def read_data(var, UC):
+    """
+    Reads and processes trend data for a specified variable from multiple experiment files, 
+    and applies a geographical mask to the data.
+
+    Parameters:
+    var (str): The variable name to read from the files.
+    UC (int): The index of the longitude slice to extract data from.
+
+    Returns:
+    input_data (list of xr.Dataset): A list of datasets containing the trend data for each experiment.
+    data (list of np.ma.MaskedArray): A list of masked arrays containing the trend data, 
+                                      with the mask applied based on the geographical region.
+
+    Raises:
+    SystemExit: If any of the input files cannot be found.
+
+    Notes:
+    - The function expects input files to be located in subdirectories named '{exp}_files_temp' 
+      under a common output path, with filenames formatted as '{var}_trend.nc'.
+    - The experiments considered are 'CTRL', 'LENS', 'WIND', and 'TEMP'.
+    - A mask is applied based on data from 'average_CTRL_1920-1950.nc' to restrict the data 
+      to a specific geographical region defined by longitude and latitude slices.
+    """
+    filepaths = [
+        f"{output_path}{exp}_files_temp/{var}_trend.nc"
+        for exp in ["CTRL", "LENS", "WIND", "TEMP"]
+    ]
+    
+    for filepath in filepaths:
+        try:
+            open(filepath)
+        except FileNotFoundError:
+            sys.exit(f"Stopped - Could not find input file {filepath}")
+
+    # load up the input data
+    input_data = [xr.open_dataset(filepath, decode_times = False) for filepath in filepaths]
+    temp_data = xr.open_dataset(f"{output_path}average_CTRL_1920-1950.nc")
+    
+    sliced_data = temp_data["maskC"].sel(XC = lon_slices[UC], method = "nearest")
+    mask = sliced_data.sel(YC = slice(lat_slices[0], lat_slices[1]))
+
+    data_um = [input.trend.values[:,:,UC]*100 for input in input_data] 
+    data = [np.ma.masked_where(mask == 0, data_idx) for data_idx in data_um]  
+
+    return input_data, data
 
 def read_timeseries(experiments, ensemble, var):
     """
@@ -193,45 +241,44 @@ def read_variable(input_data, var, grid, depth_range=None):
 def create_profile(
     input_data, var, grid, lat_range, lon_range, time=12, timeseries=False
 ):
-    # Check if input_data contains 12 years of data
-    if len(input_data.time.values) != 12:
-        print("Error: input_data must contain {} years of data".format(time))
-        fillarray = np.full((12, 50), np.nan)
-        return fillarray
+    # # Check if input_data contains 12 years of data
+    # if len(input_data.time.values) != 12:
+    #     print("Error: input_data must contain {} years of data".format(time))
+    #     fillarray = np.full((12, 50), np.nan)
+    #     return fillarray
 
-    else:
-        # Number of days in each month
-        days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    # Number of days in each month
+    days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-        # apply mask and cut over the area defined
-        data = mask_3d(input_data[var].values, grid, time_dependent=True)
-        data = apply_mask(
-            data,
-            (grid.get_hfac(gtype="t") == 0) & (input_data.Depth.values >= 1500),
-            time_dependent=True,
-            depth_dependent=True,
+    # apply mask and cut over the area defined
+    data = mask_3d(input_data[var].values, grid, time_dependent=True)
+    data = apply_mask(
+        data,
+        (grid.get_hfac(gtype="t") == 0) & (input_data.Depth.values >= 1500),
+        time_dependent=True,
+        depth_dependent=True,
+    )
+    data_cut = data[:, :, lat_range[0] : lat_range[1], lon_range[0] : lon_range[1]]
+    mask_cut = np.invert(data[:, :, :, :].mask).astype(float)[
+        :, :, lat_range[0] : lat_range[1], lon_range[0] : lon_range[1]
+    ]
+    dA = grid.dA
+    dV = add_time_dim(dA, data.shape[1])
+    dV = add_time_dim(dV, data.shape[0])
+    dV_cut = dV[:, :, lat_range[0] : lat_range[1], lon_range[0] : lon_range[1]]
+
+    # calculate and return average, either a timeseries or average over the year
+    if timeseries:
+        return np.sum(data_cut * dV_cut * mask_cut, axis=(-2, -1)) / np.sum(
+            dV_cut * mask_cut, axis=(-2, -1)
         )
-        data_cut = data[:, :, lat_range[0] : lat_range[1], lon_range[0] : lon_range[1]]
-        mask_cut = np.invert(data[:, :, :, :].mask).astype(float)[
-            :, :, lat_range[0] : lat_range[1], lon_range[0] : lon_range[1]
-        ]
-        dA = grid.dA
-        dV = add_time_dim(dA, data.shape[1])
-        dV = add_time_dim(dV, data.shape[0])
-        dV_cut = dV[:, :, lat_range[0] : lat_range[1], lon_range[0] : lon_range[1]]
-
-        # calculate and return average, either a timeseries or average over the year
-        if timeseries:
-            return np.sum(data_cut * dV_cut * mask_cut, axis=(-2, -1)) / np.sum(
-                dV_cut * mask_cut, axis=(-2, -1)
-            )
-        else:
-            return np.average(
-                np.sum(data_cut * dV_cut * mask_cut, axis=(-2, -1))
-                / np.sum(dV_cut * mask_cut, axis=(-2, -1)),
-                axis=0,
-                weights=days_in_month,
-            )
+    else:
+        return np.average(
+            np.sum(data_cut * dV_cut * mask_cut, axis=(-2, -1))
+            / np.sum(dV_cut * mask_cut, axis=(-2, -1)),
+            axis=0,
+            weights=days_in_month,
+        )
 
 
 def interpolate_currents(V, zon_or_mer):
