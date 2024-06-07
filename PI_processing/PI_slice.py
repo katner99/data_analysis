@@ -1,91 +1,57 @@
-import sys
-
-import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 import numpy as np
-import xarray as xr
-
-from directories_and_paths import grid_filepath
-from funcs import find_nearest
-from directories_and_paths import output_path
-from mitgcm_python.grid import Grid
-
-from config_options import lat_slices, lon_slices
+from funcs import read_data
 
 def main():
-    var = "SALT"
-    save = True
-    show = True
-    filepaths = [
-        f"{output_path}{exp}_files_temp/{var}_trend.nc"
-        for exp in ["CTRL", "LENS", "WIND", "TEMP"]
-    ]
-    
-    for filepath in filepaths:
-        try:
-            open(filepath)
-        except FileNotFoundError:
-            sys.exit(f"Stopped - Could not find input file {filepath}")
-
-    experiment = ["pre-industrial", "high-emissions", "wind forcing", "thermodynamic f."]
-
-    # load up the input data
-    input_data = [xr.open_dataset(filepath, decode_times = False) for filepath in filepaths]
-    temp_data = xr.open_dataset(f"{output_path}average_CTRL_1920-1950.nc")
-    
-    sliced_data = temp_data["maskC"].sel(XC = lon_slices[3], method = "nearest")
-    mask = sliced_data.sel(YC = slice(lat_slices[0], lat_slices[1]))
-
-    # read in the general variables (these should be the same between the ensembles
-    #[lat, lon, ice_mask_temp, depth] = [input_data[0][param].values for param in ["YC", "XC", "maskC", "Depth"]]
-    #ice_mask = ice_mask_temp[0,:,:]
-
-    grid = Grid(grid_filepath)
-
-    z = input_data[0].depth.values
-    lat = input_data[0]["lat"]
-    color_scheme = "PRGn"
-       
-    # load the variables and calculate the average over the year
-    days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-
-    data_um = [input.trend.values[:,:,3] for input in input_data] 
-    data = [np.ma.masked_where(mask == 0, data_idx) for data_idx in data_um]  
-    print(np.shape(data[0]), np.shape(mask))
-
-    data_um = [input.pvalue.values[:,:,3] for input in input_data] 
-    pvalue = [np.ma.masked_where(mask == 0, data_idx) for data_idx in data_um]  
+    UC = 0 # undercurrent section
+    [input_data, vel] = read_data("UVEL", UC)
+    [input_data, salt] = read_data("SALT", UC)
       
-    low_val = -5e-06
-    high_val = 5e-06
-    print(low_val, high_val)
+    z = input_data[0].z.values
+    lat = input_data[0]["lat"]
+    color_scheme = "PiYG_r"
+    experiment = ["pre-industrial", "high-emissions forcing", "wind forcing", "thermodynamic forcing"]
+    low_val = -np.max(vel[1])
+    high_val = -low_val
+    low_sal = -np.max(salt[1])
+    high_sal = -low_val
+    print(low_sal, high_sal)
     step = 15
-    font_size = 16
+    font_size = 20
         
     # create subplots with each variable on a new line
-    fig, axs = plt.subplots(nrows=1, ncols=4, gridspec_kw={"hspace": 0.05, "wspace": 0.05}, figsize=(25,8))
-        
+    fig, axs = plt.subplots(nrows=3, ncols=1, gridspec_kw={"hspace": 0.08, "wspace": 0.05}, figsize=(8,20)) 
     axs = axs.flatten()
 
-    for i in range(4):
-        cs = axs[i].contourf(lat, z, data[i], cmap=color_scheme, extend="both", levels=np.linspace(low_val, high_val, step))
-        axs[i].contourf(lat, z, pvalue[i], levels=[-np.inf, 0.01], colors='none', hatches=['..'], alpha=0)
-        axs[i].set_title(experiment[i], weight="bold", fontsize = font_size)
-        axs[i].set_xlabel("Latitude", fontsize = font_size)
-        axs[i].set_ylim([-1000, 0])
-        if i > 0:
-            axs[i].get_yaxis().set_visible(False)
-        axs[i].set_aspect("auto", adjustable="box")
-    axs[0].set_ylabel("Depth (m)", fontsize = font_size)   
+    fmt = ticker.ScalarFormatter(useMathText=True)
+    fmt.set_powerlimits((0, 0))
+    for i in range(1, 4):
+        cv = axs[i-1].contourf(lat, z, vel[i]-vel[0], cmap=color_scheme, extend="both", levels=np.linspace(low_val, high_val, step))
+        cs = axs[i-1].contour(lat, z, salt[i]-salt[0], colors='black')
+        
+        axs[i-1].set_title(experiment[i], weight="bold", fontsize = font_size)
+        axs[i-1].set_xlabel("Latitude", fontsize = font_size)
+        axs[i-1].set_ylim([-1000, 0])
+        axs[i-1].tick_params(axis='x', labelsize=16)
+        axs[i-1].tick_params(axis='y', labelsize=16)
+        if i < 3:
+            axs[i-1].get_xaxis().set_visible(False)
+        axs[i-1].set_aspect("auto", adjustable="box")
+        plt.clabel(cs, cs.levels, inline = True,  fmt=lambda x: f'{x:.0e}', fontsize = 16) 
+    
+        axs[i-1].set_ylabel("Depth (m)", fontsize = font_size)  
+
     fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    fig.colorbar(cs, cax=cbar_ax, ticks = np.arange(low_val, high_val, 2.5e-6))
+    cbar_ax = fig.add_axes([0.82, 0.15, 0.02, 0.7])
+    cbar = fig.colorbar(cv, cax=cbar_ax, ticks = np.arange(-5e-05, 5.1e-05, 2.5e-05))
+    cbar.set_label("m s$^{-1}$ century$^{-1}$", fontsize = font_size)
+
+    
+    plt.suptitle("Zonal velocity and salinity trends per century", fontsize = font_size+2, weight = "bold")
         
-    plt.suptitle("Salinity trend per cetury across 118W", fontsize = font_size, weight = "bold")
-        
-    fig.savefig("salt_trend_undercurrent_4.png")
+    fig.savefig(f"uvel_trend_undercurrent_{UC}.png", bbox_inches='tight', transparent=True)
     plt.show()
         
     
