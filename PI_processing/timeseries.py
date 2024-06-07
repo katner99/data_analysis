@@ -48,7 +48,7 @@ def main():
     ax.axvline((1997-1920)*12, color = 'orange', linewidth=2, alpha=0.5)
     plt.text((1996-1920)*12, -1.3, "thermodynamic scenario \n diverges from pre-industrial scenario ", horizontalalignment='right', color = "orange", fontsize = 14, fontweight = "bold")
     plt.text((2001-1920)*12, -1.3, " wind scenario diverges from \n pre-industrial scenario", color="dodgerblue", fontsize = 14, fontweight = "bold")
-    fig.savefig(file_out, bbox_inches='tight')
+    fig.savefig(file_out, bbox_inches='tight', transparent=True)
     #plt.show()
 
 
