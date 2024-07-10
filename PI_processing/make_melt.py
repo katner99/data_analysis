@@ -4,7 +4,7 @@ import xarray as xr
 import pandas as pd
 from funcs import find_years
 from mitgcm_python.grid import Grid
-from directories_and_paths import output_path, grid_filepath
+from directories_and_paths import output_path, grid_filepath, lens_path
 from config_options import *
 from calcs import append_melt
 
