@@ -96,12 +96,14 @@ def read_winds(filename):
                          value range, interval, step, and color scheme.
     """
     data = xr.open_dataset(filename, decode_times=False)
-    period_start = 2000
+    period_start = 1920
     start_index = (period_start - 1920) * 12
 
     uwinds = data.u_wind.values[start_index:, ...]
     vwinds = data.v_wind.values[start_index:, ...]
-    time = data.time.values[start_index:, ...]
+    print(data.time)
+    time = data.time.values[start_index:, ...]/(365*100)
+    
     graph_params = {
         "font_size": 12,
         "low_val": 0,

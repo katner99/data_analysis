@@ -1,51 +1,12 @@
 from config_options import config_comparison, slice_ranges
-from plots import read_mask, pretty_labels
+from plots import read_mask, pretty_labels, read_var_fluxes, read_var_profile
 from plots_2d import contour_func
-from funcs import create_profile
+from funcs import create_profile, read_data
 from directories_and_paths import output_path, grid_filepath
 from mitgcm_python.grid import Grid
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
 import xarray as xr
-
-def read_var_fluxes(var_name):
-    filepaths = [
-        f"{output_path}{exp}_files_temp/{var_name}_spread.nc"
-        for exp in ["LENS", "WIND", "TEMP"]
-    ]
-    
-    for filepath in filepaths:
-        try:
-            open(filepath)
-        except FileNotFoundError:
-            sys.exit(f"Stopped - Could not find input file {filepath}")
-
-    input_data = [
-        xr.open_dataset(filepath, decode_times=False) for filepath in filepaths
-    ]
-
-    return input_data 
-
-def read_var_profile():
-    period = "2070-2100"
-    experiments = ["CTRL", "LENS", "WIND", "TEMP"]
-
-    filepaths = [
-        output_path + "average_" + exp + "_" + period + ".nc"
-        for exp in experiments
-    ]
-
-    for filepath in filepaths:
-        try:
-            open(filepath)
-        except FileNotFoundError:
-            sys.exit(f"Stopped - Could not find input file {filepath}")
-
-    input_data = [xr.open_dataset(filepath, decode_times=False) for filepath in filepaths]
-
-    return input_data
-
 
 def plot_fluxes(axs, fig, data, data_SH, exp_names, var, set_up, graph_params, graph_params_SH):
     grid = Grid(grid_filepath)
@@ -60,7 +21,7 @@ def plot_fluxes(axs, fig, data, data_SH, exp_names, var, set_up, graph_params, g
         
         axs[place].contourf(set_up["X"], set_up["Y"], graph_params["pvalue"][i], levels=[-np.inf, 0.05], colors='none', hatches=['///'], alpha=0)
         axs[place].contourf(set_up["X"], set_up["Y"], graph_params_SH["pvalue"][i], levels=[-np.inf, 0.05], colors='none', hatches=['///'], alpha=0)
-    axs[0].set_title("Trends in freshwater fluxes \n from sea-ice and ice shelf \n melting")
+    axs[0].set_title("Trends in freshwater fluxes \n from sea-ice and ice shelf \n melting (m$^{2}$ yr$^{-1}$ century$^{-1}$)")
 
     ticks_SI = np.arange(-1.5, 1.6, 0.5)
     cbar_ax_SI = fig.add_axes([0.1, 0.01, 0.4, 0.02])
@@ -144,10 +105,75 @@ def plot_profile(ax, TEMP_sim, TEMP_ctr, SALT_sim, SALT_ctr, z):
 
     return ax, ax2, a, b, c, d
 
+def plot_slice(axs, fig):
+    import matplotlib.ticker as ticker
+    from plots import lat_label
+    UC = 0 # undercurrent section
+    [input_data, vel] = read_data("UVEL", UC)
+    [input_data, salt] = read_data("DENSITY", UC)
+      
+    z = input_data[0].z.values
+    lat = input_data[0]["lat"]
+    color_scheme = "PiYG_r"
+    experiment = ["NONE", "ALL", "WIND", "THERMO"]
+    low_val = np.min(vel[1])
+    high_val = -low_val
+    low_sal = -2.5e-4
+    high_sal = -low_sal
+    print(low_sal, high_sal)
+    step = 15
+    font_size = 20
+
+    fmt = ticker.ScalarFormatter(useMathText=True)
+    fmt.set_powerlimits((0, 0))
+    axs[1].set_title("Zonal velocity (m s$^{-1}$ century$^{-1}$) and \ndensity (kg m$^{-3}$ century$^{-1}$) trends \nper century")
+        
+    for idx, position in enumerate([1, 3, 5]):
+        cv = axs[position].contourf(lat, z, vel[idx+1]-vel[0], cmap=color_scheme, extend="both", levels=np.linspace(low_val, high_val, step))
+        cs = axs[position].contour(lat, z, salt[idx+1]-salt[0], colors='black')
+        axs[position].set_ylim([-1000, 0])
+        axs[position].set_xlim([-74, -71.5])
+        axs[position].tick_params(axis='x', rotation=45)
+        axs[position].tick_params(axis='y')
+        axs[position].set_ylabel("Depth (m)")
+        axs[position].yaxis.set_label_position("right")
+        axs[position].yaxis.tick_right()
+        
+        if idx == 2:
+            axs[position].locator_params(axis='x', nbins=6)
+            lat_ticks = axs[position].get_xticks()
+            lat_labels = []
+            for x in lat_ticks[:-1]:
+                lat_labels.append(lat_label(x, 2))
+            axs[position].set_xticklabels(lat_labels, size = 12)
+        else:
+            axs[position].get_xaxis().set_visible(False)
+
+        axs[position].set_aspect("auto", adjustable="box")
+        plt.clabel(cs, cs.levels, inline = True,  fmt=lambda x: f'{x:.0e}', fontsize = 16) 
+
+    cbar_ax_SI = fig.add_axes([0.55, 0.035, 0.4, 0.02])
+    cbar_SI = plt.colorbar(cv, cax=cbar_ax_SI, orientation='horizontal')
+    #cbar_SI.set_ticks(ticks_SI)
+    #cbar_SI.ax.xaxis.set_ticks_position('bottom')  # Move the ticks to the bottom
+    #cbar_SI.ax.tick_params(axis='x', direction='inout', length=0)
+    #cbar_SI.ax.xaxis.set_tick_params(pad=-12)
+    #cbar = fig.colorbar(cv, cax=cbar_ax, ticks = np.arange(-2e-04, 2.1e-04, 1e-04))
+    #tick_labels = [-2, -1, 0, 1, 2]
+    #cbar.ax.set_yticklabels(tick_labels)
+    #cbar.ax.text(1.4, 1, r'$\times 10^{-4}$', fontsize = font_size, transform=cbar.ax.transAxes)
+    #cbar.set_label("kg m$^{-3}$ century$^{-1}$", fontsize = font_size)
+
+    
+    #plt.suptitle("Zonal velocity (m s$^{-1}$ century$^{-1}$) and density (kg m$^{-3}$ century$^{-1}$) trends per century", fontsize = font_size+2, weight = "bold")
+        
+    #fig.savefig(f"uvel_trend_undercurrent_{UC}.png", bbox_inches='tight', transparent=False)
+    #plt.show()
+
 def main():
     var = "oceFWflx"
     file_out = f"mega_comparison_trend_{var}.png"
-    experiment = ["high emissions forcing", "wind forcing", "thermodynamic forcing"]
+    experiment = ["ALL", "WIND", "THERMO"]
 
     input_data_SI = read_var_fluxes(var)          # sea_ice freshwater flux
     input_data_SH = read_var_fluxes("SHIfwFlx")   # ice shelf melt fluxes
@@ -165,9 +191,10 @@ def main():
     axs = axs.flatten()
 
     plot_fluxes(axs, fig, data_SI, data_SH, experiment, var, set_up, graph_params_SI, graph_params_SH)
-    plot_profiles(axs, input_data_ST)
-    fig.savefig(file_out, transparent=True)
-    plt.show()
+    plot_slice(axs, fig)
+    #plot_profiles(axs, input_data_ST)
+    fig.savefig(file_out, transparent=False)
+    #plt.show()
 
 if __name__ == "__main__":
     main()

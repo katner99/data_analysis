@@ -2,8 +2,6 @@ from config_options import config_comparison
 from plots import read_mask, pretty_labels, zoom_shelf
 from directories_and_paths import output_path, grid_filepath
 from mitgcm_python.grid import Grid
-import matplotlib
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from plots_2d import contour_func
 import sys
@@ -11,23 +9,30 @@ import xarray as xr
 import numpy as np
 
 
-def comparison_plot(data, set_up, graph_params, graph_params_anom, experiment, file_out, save=True, show=False, linearity=False, zoom = None):
-    fig, axs = plt.subplots(nrows=4, ncols=2, gridspec_kw={"hspace": 0.05, "wspace": 0.04}, figsize=(14, 20))
+def comparison_plot(data, set_up, graph_params, graph_params_anom, experiment, file_out, save=True, show=False, linearity=True, zoom = None):
+    fig, axs = plt.subplots(nrows=4, ncols=3, gridspec_kw={"hspace": 0.05, "wspace": 0.04}, figsize=(20, 20))
     axs = axs.flatten()
 
-    main_figs = [0, 2, 4, 6]
-    anom_figs = [3, 5, 7]
+    main_figs = [0, 3, 6, 9]
+    anom_figs = [4, 7, 8, 10, 11]
     axs[1].axis("off")
+    #axs[2].axis("off")
+    axs[5].axis("off")
 
-    pval = xr.open_dataset("CL_pval.nc")
-    lens = pval.pvalue.values
-    pval = xr.open_dataset("CW_pval.nc")
-    wind = pval.pvalue.values
-    pval = xr.open_dataset("CT_pval.nc")
-    temp = pval.pvalue.values
+    pval = xr.open_dataset("LENS_pvalue.nc")
+    LC = pval.pvalue.values
+    pval = xr.open_dataset("WIND_pvalue.nc")
+    WC = pval.pvalue.values
+    pval = xr.open_dataset("TEMP_pvalue.nc")
+    TC = pval.pvalue.values
+    pval = xr.open_dataset("WIND_LENS_pvalue.nc")
+    WL = pval.pvalue.values
+    pval = xr.open_dataset("TEMP_LENS_pvalue.nc")
+    TL = pval.pvalue.values
+    
     
     for count, i in enumerate(main_figs):
-        if i == 6:
+        if i == 9:
             hide_ticks_x = False
         else:
             hide_ticks_x = True
@@ -36,9 +41,9 @@ def comparison_plot(data, set_up, graph_params, graph_params_anom, experiment, f
 
         axs[i].text(
             0.5,
-            0.85,
+            0.9,
             experiment[count],
-            FontSize = 16,
+            FontSize = 19,
             horizontalalignment="center",
             transform=axs[i].transAxes,
             bbox=dict(facecolor="white", alpha=0.9),
@@ -46,40 +51,78 @@ def comparison_plot(data, set_up, graph_params, graph_params_anom, experiment, f
         pretty_labels(axs[i])
 
     hide_ticks_y = True
-    anom_plt = contour_func(axs[3], data[1] - data[0], set_up, graph_params_anom, hide_ticks_x = True, hide_ticks_y = hide_ticks_y)
-    axs[3].contourf(set_up["X"], set_up["Y"], lens, levels=[-np.inf, 0.05], colors='none', hatches=['....'], alpha=0)
-    contour_func(axs[5], data[2] - data[0], set_up, graph_params_anom, hide_ticks_x = True, hide_ticks_y = hide_ticks_y)
-    axs[5].contourf(set_up["X"], set_up["Y"], wind, levels=[-np.inf, 0.05], colors='none', hatches=['....'], alpha=0)
-    contour_func(axs[7], data[3] - data[0], set_up, graph_params_anom, hide_ticks_x = False, hide_ticks_y = hide_ticks_y)
-    axs[7].contourf(set_up["X"], set_up["Y"], temp, levels=[-np.inf, 0.05], colors='none', hatches=['....'], alpha=0)
-                     
-    for count, i in enumerate(anom_figs):
+    anom_plt = contour_func(axs[4], data[1] - data[0], set_up, graph_params, hide_ticks_x = True, hide_ticks_y = hide_ticks_y)
+    axs[4].contourf(set_up["X"], set_up["Y"], LC, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
+    contour_func(axs[7], data[2] - data[0], set_up, graph_params, hide_ticks_x = True, hide_ticks_y = hide_ticks_y)
+    axs[7].contourf(set_up["X"], set_up["Y"], WC, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
+    contour_func(axs[10], data[3] - data[0], set_up, graph_params, hide_ticks_x = False, hide_ticks_y = hide_ticks_y)
+    axs[10].contourf(set_up["X"], set_up["Y"], TC, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
+    contour_func(axs[8], data[1] - data[2], set_up, graph_params, hide_ticks_x = True, hide_ticks_y = hide_ticks_y)
+    axs[8].contourf(set_up["X"], set_up["Y"], WL, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
+    contour_func(axs[11], data[1] - data[3], set_up, graph_params, hide_ticks_x = False, hide_ticks_y = hide_ticks_y)
+    axs[11].contourf(set_up["X"], set_up["Y"], TL, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
+
+    if linearity:
+        residual = data[0] + data[1] - data[2] - data[3]
+        position = 2
+        cs = contour_func(axs[position], residual, set_up, graph_params)
+
+        pretty_labels(axs[position])
+        zoom_shelf(axs[position], zoom)
+
+        axs[position].text(
+            0.5,
+            0.9,
+            "Non-linearity",
+            FontSize = 18,
+            horizontalalignment="center",
+            transform=axs[position].transAxes,
+            bbox=dict(facecolor="white", alpha=0.9),
+        )
+
+    for count, i in enumerate([4, 7, 10]):
         zoom_shelf(axs[i], zoom)
         pretty_labels(axs[i])
         
         axs[i].text(
             0.5,
-            0.85,
+            0.9,
             experiment[count+1]+" - "+experiment[0],
-            FontSize = 16,
+            FontSize = 18,
             horizontalalignment="center",
             transform=axs[i].transAxes,
             bbox=dict(facecolor="white", alpha=0.9),
         )
 
-    ticks=np.arange(graph_params["low_val"], graph_params["high_val"]+0.1, graph_params["interval"])
-    cbar_ax = fig.add_axes([0.05, 0.04, 0.425, 0.02])  # Bottom color bar
+    for count, i in enumerate([8, 11]):
+        zoom_shelf(axs[i], zoom)
+        pretty_labels(axs[i])
+        
+        axs[i].text(
+            0.5,
+            0.9,
+            experiment[1]+" - "+experiment[count+2],
+            FontSize = 18,
+            horizontalalignment="center",
+            transform=axs[i].transAxes,
+            bbox=dict(facecolor="white", alpha=0.9),
+        )
+
+    ticks=np.arange(graph_params["low_val"], graph_params["high_val"]+0.1, 0.5)
+    cbar_ax = fig.add_axes([0.1, 0.04, 0.8, 0.02])  # Bottom color bar
     cbar = plt.colorbar(main_plt, cax=cbar_ax, orientation='horizontal')
     cbar.set_ticks(ticks)
     cbar.ax.xaxis.set_ticks_position('bottom')
+    cbar.ax.tick_params(labelsize=16)
 
-    ticks=np.arange(graph_params_anom["low_val"], graph_params_anom["high_val"]+0.1, graph_params_anom["interval"])
-    cbar_ax = fig.add_axes([0.525, 0.04, 0.425, 0.02])  # Bottom color bar
-    cbar = plt.colorbar(anom_plt, cax=cbar_ax, orientation='horizontal')
-    cbar.set_ticks(ticks)
-    cbar.ax.xaxis.set_ticks_position('bottom')
+    # ticks=np.arange(graph_params_anom["low_val"], graph_params_anom["high_val"]+0.1, graph_params_anom["interval"])
+    # cbar_ax = fig.add_axes([0.525, 0.04, 0.4, 0.02])  # Bottom color bar
+    # cbar = plt.colorbar(anom_plt, cax=cbar_ax, orientation='horizontal')
+    # cbar.set_ticks(ticks)
+    # cbar.ax.xaxis.set_ticks_position('bottom')
+    # cbar.ax.tick_params(labelsize=16)
 
-    fig.suptitle(graph_params["title"], fontsize=20)
+    fig.suptitle(graph_params["title"], fontsize=20, weight="bold")
 
     plt.subplots_adjust(top=0.95)
 
@@ -95,7 +138,7 @@ def main():
     # set up the variables you need
     var = "THETA"
     save = True
-    show = True
+    show = False
     period = "2070-2100"
     filepaths = [
         output_path + "average_" + ens + "_" + period + ".nc"
@@ -109,7 +152,7 @@ def main():
         except FileNotFoundError:
             sys.exit(f"Stopped - Could not find input file {filepath}")
 
-    experiment = ["pre-industrial forcing", "high emissions forcing", "wind forcing", "thermodynamic forcing"]
+    experiment = ["NONE", "ALL", "WIND", "THERMO"]
 
     input_data = [
         xr.open_dataset(filepath, decode_times=False) for filepath in filepaths

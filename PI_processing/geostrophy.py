@@ -75,7 +75,7 @@ def geostrophy(pressure, z):
             'pressure': (['Z', 'YC'], pressure),
             'geostrophy': (['Z', 'YG'], baroclinic_velocity),
         },
-        coords={'Z': z, 'YC': pres_lat, 'YG': pres_vel}
+        coords={'Z': z, 'YC': pres_lat, 'YG': pres_lat}
     )
 
     return geostrophy_dataset
