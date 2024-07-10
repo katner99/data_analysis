@@ -3,9 +3,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
-from directories_and_paths import output_path, lens_path, grid_filepath
-from multiprocessing import Pool, cpu_count
-from mitgcm_python.grid import Grid
+from directories_and_paths import output_path, lens_path
 
 def concatenate_var_years(args):
     """ reads and concatentates years """
@@ -29,7 +27,7 @@ def concatenate_var_years(args):
             total_data.append(data[var])
         elif option == "slice":
             from config_options import lat_slices, lon_slices
-            sliced_data = data[var].sel(XG = lon_slices, method = "nearest")
+            sliced_data = data[var].sel(XC = lon_slices, method = "nearest")
             sliced_data = sliced_data.sel(YC = slice(lat_slices[0], lat_slices[1]))
             total_data.append(sliced_data)
        
@@ -39,50 +37,6 @@ def concatenate_var_years(args):
     total_dataset['time'] = time_coords
 
     return total_dataset
-
-    if option == 'total':
-        reference_date = np.datetime64('1920-01-01')
-        time = time_coords - reference_date
-        time = time / np.timedelta64(1, 'Y')
-
-        slopes, r_values, p_values = calculate_trend_total(total_dataset, time)
-        
-        lat = data.YC.values
-        lon = data.XC.values
-
-        trend_ds = xr.Dataset(
-            {
-                'trend': (['lat', 'lon'], slopes),
-                'pvalue': (['lat', 'lon'], p_values),
-                'rvalue': (['lat', 'lon'], r_values)
-            },
-            coords={'lat': lat, 'lon': lon}
-        )
-
-    elif option == "slice":
-        reference_date = np.datetime64('1920-01-01')
-        time = time_coords - reference_date
-        time = time / np.timedelta64(1, 'Y')
-
-        slopes, r_values, p_values = calculate_trend_slice(sliced_data, time)
-        
-        z = data.Z.values
-        lat = data.YC.values
-        if var == "UVEL":
-            lon = data.XG.values
-        else:
-            lon = data.XC.values
-
-        trend_ds = xr.Dataset(
-            {
-                'trend': (['z', 'lat', 'lon'], slopes),
-                'pvalue': (['z', 'lat', 'lon'], p_values),
-                'rvalue': (['z', 'lat', 'lon'], r_values)
-            },
-            coords={'z': z, 'lat': lat, 'lon': lon}
-        )
-
-    return trend_ds
 
 def calculate_trend_total(data, time):
     """calculates trend for the slices (attempt at parallelisation)"""
@@ -143,7 +97,7 @@ def main():
     # read in the experiment, set up ensemble members and the variable to run
     experiment = str(sys.argv[1])
     ensemble_members = list(range(1, 10))  
-    var = "UVEL"
+    var = "THETA"
     option = "slice" # current options available: total, slice
 
     args_list = [(experiment, var, option, str(ens_member)) for ens_member in ensemble_members]
@@ -155,49 +109,34 @@ def main():
 
     ensemble_spread = xr.concat(results, dim='ensemble_member').mean(dim='ensemble_member')
 
-    print(np.shape(ensemble_spread))
-
-    if option == "profile":
-        from config_options import slice_ranges
-        lon_range = slice_ranges["lon_range_cont"]
-        lat_range = slice_ranges["lat_range_cont"]
-        sliced_data = ensemble_spread.sel(XC = slice(lon_range[0], lon_range[1]), YC = slice(lat_range[0], lat_range[1]))
-        time_coords = ensemble_spread.time
-        profile_dataset = sliced_data.where(sliced_data.hFacC == 1).mean(dim=["XC", "YC"])
-        profile_dataset.to_netcdf(f"output_path{experiment}_temp_files/{var}_profile.nc")
-        
-        reference_date = np.datetime64('1920-01-01')
-        time = time_coords - reference_date
-        time = time / np.timedelta64(1, 'Y')
-
-        slopes, r_values, p_values = calculate_trend_profile(profile_dataset, time)
-        
-        z = sliced_data.Z.values
-
-        trend_ds = xr.Dataset(
-            {
-                'trend': (['z'], slopes),
-                'pvalue': (['z'], p_values),
-                'rvalue': (['z'], r_values)
-            },
-            coords={'z': z}
-        )
-
     filename = f"{output_path}{experiment}_files_temp/{var}_spread.nc"
     # save incase the next bit dies RIP
     ensemble_spread.to_netcdf(filename)
 
 def calc_trend():
     experiment = str(sys.argv[1]) 
-    var = "SALT"
-    filename = f"{output_path}{experiment}_files_temp/{var}_spread.nc"
-    dataset = xr.open_dataset(filename, decode_times=False)
+    var = "DENSITY"
+        
+    if var == "DENSITY":
+        from mitgcm_python.diagnostics import density
+        dataset = xr.open_dataset(f"{output_path}{experiment}_files_temp/THETA_spread.nc", decode_times=False)
+        temp = dataset.THETA.values
+        dataset = xr.open_dataset(f"{output_path}{experiment}_files_temp/SALT_spread.nc", decode_times=False)
+        salt = dataset.SALT.values
+        depth = dataset.Z.values
+        array_1_reshaped = depth.reshape(1, 50, 1, 1)
+        press = np.broadcast_to(array_1_reshaped, salt.shape)
+        data = density("MDJWF", salt, temp, press)
+        
+    else:
+        filename = f"{output_path}{experiment}_files_temp/{var}_spread.nc"
+        dataset = xr.open_dataset(filename, decode_times=False)
+        data = dataset[var].values
+        depth = dataset.Z.values
 
-    data = dataset[var].values
     time = dataset.time.values
     lat = dataset.YC.values
     lon = dataset.XC.values
-    depth = dataset.Z.values
 
     slopes = np.empty(data.shape[1:])
     r_values = np.empty(data.shape[1:])
