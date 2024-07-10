@@ -8,7 +8,6 @@ from PIL import Image, ImageFilter
 import numpy as np
 from calcs import moving_average
 from mitgcm_python.grid import Grid
-from mitgcm_python.plot_utils.labels import lat_label, lon_label
 
 def read_var_fluxes(var_name):
     filepaths = [
@@ -48,6 +47,7 @@ def read_var_profile():
     return input_data
 
 def pretty_labels(ax, both="all"):
+    from mitgcm_python.plot_utils.labels import lat_label, lon_label
     """
     Adjusts the labels on the given matplotlib axis `ax` to display longitude and latitude
     values in a more readable format.

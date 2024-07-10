@@ -5,6 +5,13 @@ from mitgcm_python.utils import add_time_dim
 from directories_and_paths import *
 from config_options import *
 
+def monthly_average(data):
+    time = np.shape(data)[0]
+    reshape_time = int(time/12)
+    reshaped_array = data.reshape(reshape_time, 12, 384, 600)
+    result_array = reshaped_array.mean(axis=1)
+    return result_array
+
 def calc_transport(input_data, grid, lat_range, lon_range, option="total"):
     """
     function to calculate the transport over a given longitudinal range
