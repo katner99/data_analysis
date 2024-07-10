@@ -3,24 +3,6 @@ Module Docstring:
 
 This module provides configurations and utilities for analyzing oceanographic data using 
 MITgcm model outputs.
-
-Dependencies:
-- xarray (imported as xr)
-- numpy (imported as np)
-- Grid class from mitgcm_python.grid module
-- find_nearest function from funcs module
-- grid_filepath from directories_and_paths module
-
-Variables:
-- grid (Grid): Instance of the Grid class initialized with the grid file path.
-- grid_file (xarray.Dataset): Opened dataset of the grid file with time decoding disabled.
-- depth_range (list): Range of depths for analysis, specified as [min_depth, max_depth].
-- sv (float): Scaling factor for velocity.
-- lat_bin (int): Number of latitude bins.
-- lon_bin (int): Number of longitude bins.
-- time_bin (int): Number of time bins.
-- days_in_month (list): Number of days in each month.
-- slice_ranges (dict): range of areas to analyse
 """
 
 import xarray as xr
@@ -30,22 +12,25 @@ import matplotlib
 from funcs import find_nearest, read_variable
 from directories_and_paths import grid_filepath
 
+### HANDY VARIABLES ###
+sv = 10 ** (-6) # sverdrups
+g = 9.81        # acceleration due to gravity
+
+days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+### GRID DATA AND INFO ###
 grid = Grid(grid_filepath)
 grid_file = xr.open_dataset(grid_filepath, decode_times=False)
-
-depth_range = [
-    find_nearest(grid_file.Z.values, -200),
-    find_nearest(grid_file.Z.values, -700),
-]
-
-sv = 10 ** (-6)
 
 lat_bin, lon_bin, time_bin = 192, 288, 365
 
 lon_slices = [238, 250, 243, 255]
 lat_slices = [-74, -69.5]
 
-days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+depth_range = [
+    find_nearest(grid_file.Z.values, -200),
+    find_nearest(grid_file.Z.values, -700),
+]
 
 slice_ranges = {
     "lat_range_73": find_nearest(grid_file.YC.values, -73),
@@ -81,7 +66,7 @@ slice_ranges = {
         find_nearest(grid_file.YC.values, -71.5)],
 }
 
-
+### FUNCTIONS CONTAININT CONFIG INFO FOR PLOTTING  CODES ###
 def config_timeseries(var, data, experiments, ensemble):
     """
     Configure plotting information for time series data.
@@ -93,67 +78,40 @@ def config_timeseries(var, data, experiments, ensemble):
     - ensemble (int): Number of ensemble members.
 
     Returns:
-    - dict: Plotting information dictionary containing the following keys:
-        - "var" (str): Variable name.
-        - "data" (array_like): Time series data.
-        - "experiments" (str or list): Names of experiments.
-        - "ensemble_members" (int): Number of ensemble members.
-        - "ylabel" (str): Label for the y-axis.
-        - "time" (int): Total number of months.
-        - "xlabel" (array_like): Labels for the x-axis.
-        - "x_lim" (list): Limits for the x-axis.
-        - "smooth" (int): Smoothing factor.
-        - "shade_range" (bool): Indicates whether to shade the range.
-        - "experiment_full" (list): Full names of experiments.
-        - "linearity" (bool, optional): Indicates whether linearity is considered.
-        - "warming" (bool, optional): Indicates whether warming is considered.
+    - dict: Plotting information dictionary.
     """
-    if var == "melt":
-        plot_info = {
-            "var": var,
-            "data": data,
-            "experiments": experiments,
-            "ensemble_members": ensemble,
-            "ylabel": "melt (Gt/yr)",
-            "time": 181 * 12,
-            "xlabel": np.arange(1921, 2100, 10),
-            "x_lim": [12, (2099 - 1920) * 12],
-            "smooth": 2,
-            "shade_range": True,
-            "experiment_full": [
-                "pre-industrial control",
-                "high emissions",
-                "thermodynamic forcing",
-                "wind forcing",
-            ],
-        }
+    plot_info = {
+        "var": var,
+        "data": data,
+        "experiments": experiments,
+        "ensemble_members": ensemble,
+        "time": 181 * 12,
+        "xlabel": np.arange(1921, 2100, 10),
+        "x_lim": [12, (2099 - 1920) * 12],
+        "smooth": 2,
+        "shade_range": True,
+        "experiment_full": [
+            "NONE",
+            "ALL",
+            "WIND",
+            "THERMO",
+        ],
+    }
 
+    if var == "melt":
+        plot_info.update({
+            "ylabel": "melt (Gt/yr)",
+        })
     elif var == "theta":
-        plot_info = {
-            "var": var,
-            "data": data,
-            "experiments": experiments,
-            "ensemble_members": ensemble,
+        plot_info.update({
             "ylabel": "Temperature on continental shelf, 200-700m (°C)",
-            "time": 181 * 12,
-            "xlabel": np.arange(1921, 2100, 10),
-            "x_lim": [12, (2099 - 1920) * 12],
-            "smooth": 2,
-            "shade_range": True,
-            "experiment_full": [
-                "NONE",
-                "ALL",
-                "THERMO",
-                "WIND",
-            ],
-            "linearity": True,
+            "linearity": False,
             "warming": True,
-        }
+        })
 
     return plot_info
 
-
-def config_comparison(var, input_data, grid, period = None, var_name = None):
+def config_comparison(var, input_data, grid, period=None, var_name=None):
     """
     Configures plotting parameters and data for a comparison plot of various oceanographic variables.
 
@@ -168,189 +126,68 @@ def config_comparison(var, input_data, grid, period = None, var_name = None):
     - graph_params (dict): Dictionary containing parameters for the main plot.
     - graph_params_anom (dict): Dictionary containing parameters for the anomaly plot.
     """
-    if var == "trend":
-
-        if var_name == "SALT":
-            data = [input[var].values[:,:,0]*3600*24*365*100 for input in input_data]
-            color_scheme = "PRGn_r"
-            anom = 0.25
-            min_val = int(np.min(data[0]))
-            max_val = int(np.max(data[0])) + 1
-            title = f"Salinity trend per century"
-            interval = 1
-            interval_anom = 0.25
-            color_sceme_anom = "PRGn_r"
-        elif var_name in ["oceFWflx", "SIfwfrz", "SIfwmelt"]:
-            data = [input[var].mean(dim="ensemble_member").values*100 for input in input_data]
-            pvalue = [input["pvalue"] for input in input_data]
-            result = []
-
-            # Loop through each array in pval
-            for pvalue_array in pvalue:
-                # Get the dimensions
-                ensemble_members, lat, lon = pvalue_array.shape
-                
-                # Apply the condition
-                condition_met = np.sum(pvalue_array < 0.05, axis=0) >= 5
-                
-                # Create binary array based on the condition
-                binary_array = np.where(condition_met, 0, 1)
-                
-                # Append the result to the result list
-                result.append(binary_array)
-
-            pval = result
-            color_scheme = "PRGn_r"
-            anom = 1
-            min_val = -2
-            max_val = 2
-            print(min_val, max_val)
-            title = f"Freshwater Fluxes (m/yr/century)"
-            interval = 0.5
-            interval_anom = 0.25
-            color_sceme_anom = "PRGn_r"
-        elif var_name == "SIheff":
-            data = [input[var].mean(dim="ensemble_member").values*100 for input in input_data]
-            pval = [input["pvalue"].max(dim="ensemble_member").values for input in input_data]
-            color_scheme = "PRGn_r"
-            anom = 1
-            min_val = np.min(data[1])
-            max_val = -np.min(data[1])
-            print(min_val, max_val)
-            title = f"Sea Ice thickness trend"
-            interval = 0.5
-            interval_anom = 0.25
-            color_sceme_anom = "PRGn_r"
-            
-        elif var_name == "SHIfwFlx":
-            print("in")
-            data = [-input[var].mean(dim="ensemble_member").values*100 for input in input_data]
-            pval = [input["pvalue"].max(dim="ensemble_member").values for input in input_data]
-            c_purp = matplotlib.colors.colorConverter.to_rgba('purple')
-            c_red = matplotlib.colors.colorConverter.to_rgba('orchid')
-            c_blue= matplotlib.colors.colorConverter.to_rgba('skyblue')
-            c_super= matplotlib.colors.colorConverter.to_rgba('steelblue')
-            c_white_trans = matplotlib.colors.colorConverter.to_rgba('white',alpha = 0.0)
-            cmap_rb = matplotlib.colors.LinearSegmentedColormap.from_list('rb_cmap',[c_super, c_blue,c_white_trans,c_red, c_purp],512)
-            color_scheme = cmap_rb
-            anom = 10
-            min_val = -6
-            max_val = 6
-            print(min_val, max_val)
-            title = f"melt (m/yr/century)"
-            interval = 2.5
-            interval_anom = 5
-            color_sceme_anom = "PRGn_r"
-
-        elif var_name == "SALT":
-            data = [input[var].values[:,:,0]*3600*24*365*100 for input in input_data]
-            color_scheme = "PRGn_r"
-            anom = 0.25
-            min_val = int(np.min(data[0]))
-            max_val = int(np.max(data[0])) + 1
-            title = f"Salinity trend per century"
-            interval = 1
-            interval_anom = 0.25
-            color_sceme_anom = "PRGn_r"
-
-        graph_params = {
-            "font_size": 12,
-            "low_val": min_val,
-            "high_val": max_val,
-            "interval": interval,
-            "color_scheme": color_scheme,
-            "step": 20,
-            "title": title,
-            "pvalue": pval
-        }
-
-    else:    
-        if var == "THETA":
-            depth_range = [
-                find_nearest(input_data[0]["Z"].values, -200),
-                find_nearest(input_data[0]["Z"].values, -700),
-            ]
-            data = [read_variable(input, var, grid, depth_range) for input in input_data]
-            color_scheme = "coolwarm"
-            color_sceme_anom = color_scheme
-            anom = 1.5
-            min_val = -2
-            max_val = 2.1
-            title = f"Average potential temperature between 200 and 700m {period}"
-            interval = 1
-            interval_anom = 0.5
-        # sea ice thickness
-        elif var == "SIheff":
-            data = [read_variable(input, var, grid) for input in input_data]
-            color_scheme = "jet"
-            anom = 1
-            min_val = 0
-            max_val = 2
-            interval = 0.25
-            interval_anom = 0.25
-            title = f"Sea ice thickness (m) {period}"
-            color_sceme_anom = "PRGn_r"
-        # sea ice tickness
-        elif var in ["SIheff", "oceFWflx", "SIfwmelt", "SIfwfrz", "EXFvwind", "oceQnet"]:
-            data = [
-                read_variable(input, var, grid) * 3600 * 24 * 365 / 1000
-                for input in input_data
-            ]
-            color_scheme = "PRGn_r"
-            anom = 1.5
-            min_val = -5
-            max_val = 5
-            interval = 0.25
-            interval_anom = 0.25
-            title = f"Freshwater fluxes m/yr {period}"
-            color_sceme_anom = "PRGn_r"
-
-        # salinity
-        elif var == "SALT":
-            data = [read_variable(input, var, grid) for input in input_data]
-            color_scheme = "PRGn_r"
-            anom = 0.25
-            min_val = int(np.min(data[0]))
-            max_val = int(np.max(data[0])) + 1
-            title = f"Surface Salinity {period}"
-            interval = 1
-            interval_anom = 0.25
-            color_sceme_anom = "PRGn_r"
-
-        elif var == "SHIfwFlx":
-            data = [
-                -read_variable(input, var, grid) * 3600 * 24 * 30 * 10 ** (-3)
-                for input in input_data
-            ]
-            color_scheme = "rainbow"
-            color_sceme_anom = "PRGn_r"
-            anom = 25
-            min_val = 0
-            max_val = 76
-            title = f"ice shelf basal melt rate ({period}) (m.w.e./yr)"
-            interval = 20
-            interval_anom = 10
-
-        graph_params = {
-            "font_size": 12,
-            "low_val": min_val,
-            "high_val": max_val,
-            "interval": interval,
-            "color_scheme": color_scheme,
-            "step": 20,
-            "title": title,
-        }
-            
-
-    # graph parameters 1.333112e-05 -1.0214189e-06
-    
-
-    graph_params_anom = {
+    common_params = {
         "font_size": 12,
-        "low_val": -anom,
-        "high_val": anom,
-        "interval": interval_anom,
-        "color_scheme": color_sceme_anom,
         "step": 20,
     }
+
+    if var == "trend":
+        data, pval = None, None
+        if var_name == "SALT":
+            data = [input[var].values[:, :, 0] * 3600 * 24 * 365 * 100 for input in input_data]
+            min_val, max_val, interval, interval_anom, anom, color_scheme = int(np.min(data[0])), int(np.max(data[0])) + 1, 1, 0.25, 0.25, "PRGn_r"
+            title = "Salinity trend per century"
+        elif var_name in ["oceFWflx", "SIfwfrz", "SIfwmelt"]:
+            data = [input[var].mean(dim="ensemble_member").values * 100 for input in input_data]
+            pval = [np.where(np.sum(p["pvalue"] < 0.05, axis=0) >= 5, 0, 1) for p in input_data]
+            min_val, max_val, interval, interval_anom, anom, color_scheme = -2, 2, 0.5, 0.25, 1, "PRGn_r"
+            title = "Freshwater Fluxes (m/yr/century)"
+        elif var_name == "SIheff":
+            data = [input[var].mean(dim="ensemble_member").values * 100 for input in input_data]
+            pval = [input["pvalue"].max(dim="ensemble_member").values for input in input_data]
+            min_val, max_val, interval, interval_anom, anom, color_scheme = -0.5, 0.5, 0.5, 0.25, 0.25, "nipy_spectral"
+            title = "Sea Ice thickness trend"
+        elif var_name == "SHIfwFlx":
+            data = [-input[var].mean(dim="ensemble_member").values * 100 for input in input_data]
+            pval = [input["pvalue"].max(dim="ensemble_member").values for input in input_data]
+            c_purp, c_red, c_blue, c_super, c_white_trans = (matplotlib.colors.colorConverter.to_rgba(c) for c in ['purple', 'orchid', 'skyblue', 'steelblue', 'white'])
+            color_scheme = matplotlib.colors.LinearSegmentedColormap.from_list('rb_cmap', [c_super, c_blue, c_white_trans, c_red, c_purp], 512)
+            min_val, max_val, interval, interval_anom, anom = -6, 6, 2.5, 5, 10
+            title = "melt (m/yr/century)"
+        
+        graph_params = {**common_params, "low_val": min_val, "high_val": max_val, "interval": interval, "color_scheme": color_scheme, "title": title, "pvalue": pval}
+    elif var == "mean":
+        if var_name == "oceFWflx":
+            data = [np.nanmean(input[var_name].values[(2070 - 1920) * 12:(2075 - 1920) * 12, ...] * 3600 * 24 * 365 / 1000, axis=0) for input in input_data]
+            min_val, max_val, interval, interval_anom, anom, color_scheme = -4, 4, 1, 0.25, 1, "PRGn_r"
+            title = "Freshwater fluxes m/yr 2070-2075"
+        
+        graph_params = {**common_params, "low_val": min_val, "high_val": max_val, "interval": interval, "color_scheme": color_scheme, "title": title}
+    else:
+        if var == "THETA":
+            depth_range = [find_nearest(input_data[0]["Z"].values, -200), find_nearest(input_data[0]["Z"].values, -700)]
+            data = [read_variable(input, var, grid, depth_range) for input in input_data]
+            min_val, max_val, interval, interval_anom, anom, color_scheme = -2, 2.1, 1, 0.5, 1.5, "coolwarm"
+            title = f"Average potential temperature between 200 and 700m {period}"
+        elif var == "SIheff":
+            data = [read_variable(input, var, grid) for input in input_data]
+            min_val, max_val, interval, interval_anom, anom, color_scheme = 0, 2, 0.25, 0.25, 1, "jet"
+            title = f"Sea ice thickness (m) {period}"
+        elif var in ["SIheff", "oceFWflx", "SIfwmelt", "SIfwfrz", "EXFvwind", "oceQnet"]:
+            data = [read_variable(input, var, grid) * 3600 * 24 * 365 / 1000 for input in input_data]
+            min_val, max_val, interval, interval_anom, anom, color_scheme = -5, 5, 0.25, 0.25, 1.5, "PRGn_r"
+            title = f"Freshwater fluxes m/yr {period}"
+        elif var == "SALT":
+            data = [read_variable(input, var, grid) for input in input_data]
+            min_val, max_val, interval, interval_anom, anom, color_scheme = int(np.min(data[0])), int(np.max(data[0])) + 1, 1, 0.25, 0.25, "PRGn_r"
+            title = f"Surface Salinity {period}"
+        elif var == "SHIfwFlx":
+            data = [-read_variable(input, var, grid) * 3600 * 24 * 30 * 10 ** -3 for input in input_data]
+            min_val, max_val, interval, interval_anom, anom, color_scheme = 0, 76, 20, 10, 25, "rainbow"
+            title = f"ice shelf basal melt rate ({period}) (m.w.e./yr)"
+        
+        graph_params = {**common_params, "low_val": min_val, "high_val": max_val, "interval": interval, "color_scheme": color_scheme, "title": title}
+
+    graph_params_anom = {**common_params, "low_val": -anom, "high_val": anom, "interval": interval_anom, "color_scheme": color_scheme}
+
     return data, graph_params, graph_params_anom
