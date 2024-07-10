@@ -158,9 +158,9 @@ def config_comparison(var, input_data, grid, period=None, var_name=None):
         graph_params = {**common_params, "low_val": min_val, "high_val": max_val, "interval": interval, "color_scheme": color_scheme, "title": title, "pvalue": pval}
     elif var == "mean":
         if var_name == "oceFWflx":
-            data = [np.nanmean(input[var_name].values[(2070 - 1920) * 12:(2075 - 1920) * 12, ...] * 3600 * 24 * 365 / 1000, axis=0) for input in input_data]
+            data = [np.nanmean(input[var_name].values[(2060 - 1920) * 12:(2070 - 1920) * 12, ...] * 3600 * 24 * 365 / 1000, axis=0) for input in input_data]
             min_val, max_val, interval, interval_anom, anom, color_scheme = -4, 4, 1, 0.25, 1, "PRGn_r"
-            title = "Freshwater fluxes m/yr 2070-2075"
+            title = "Freshwater fluxes m/yr 2060 - 2070"
         
         graph_params = {**common_params, "low_val": min_val, "high_val": max_val, "interval": interval, "color_scheme": color_scheme, "title": title}
     else:
