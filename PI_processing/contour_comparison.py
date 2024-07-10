@@ -29,7 +29,7 @@ def main():
 
     # will follow the first option if going through analysed data, will otherwise get the climatology data for the corresponding var
     if var in ["trend", "pvalue", "mean"]:
-        var_name = "oveFWflx"
+        var_name = "oceFWflx"
         [filepaths, file_out] = read_data(var, var_name)
     else:
         period = "2070-2100"
