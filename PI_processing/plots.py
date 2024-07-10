@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
-
+from directories_and_paths import output_path
+import sys
+import xarray as xr
 from matplotlib import animation
 
 from PIL import Image, ImageFilter
@@ -8,8 +10,44 @@ from calcs import moving_average
 from mitgcm_python.grid import Grid
 from mitgcm_python.plot_utils.labels import lat_label, lon_label
 
+def read_var_fluxes(var_name):
+    filepaths = [
+        f"{output_path}{exp}_files_temp/{var_name}_spread.nc"
+        for exp in ["LENS", "WIND", "TEMP"]
+    ]
+    
+    for filepath in filepaths:
+        try:
+            open(filepath)
+        except FileNotFoundError:
+            sys.exit(f"Stopped - Could not find input file {filepath}")
 
-def pretty_labels(ax):
+    input_data = [
+        xr.open_dataset(filepath, decode_times=False) for filepath in filepaths
+    ]
+
+    return input_data 
+
+def read_var_profile():
+    period = "2070-2100"
+    experiments = ["CTRL", "LENS", "WIND", "TEMP"]
+
+    filepaths = [
+        output_path + "average_" + exp + "_" + period + ".nc"
+        for exp in experiments
+    ]
+
+    for filepath in filepaths:
+        try:
+            open(filepath)
+        except FileNotFoundError:
+            sys.exit(f"Stopped - Could not find input file {filepath}")
+
+    input_data = [xr.open_dataset(filepath, decode_times=False) for filepath in filepaths]
+
+    return input_data
+
+def pretty_labels(ax, both="all"):
     """
     Adjusts the labels on the given matplotlib axis `ax` to display longitude and latitude
     values in a more readable format.
@@ -20,17 +58,20 @@ def pretty_labels(ax):
     Returns:
     - None
     """
-    lon_ticks = ax.get_xticks() - 360
-    lon_labels = []
-    for x in lon_ticks:
-        lon_labels.append(lon_label(x, 2))
-    ax.set_xticklabels(lon_labels[:-1])
-    ax.tick_params(axis="x", labelrotation=45)
-    lat_ticks = ax.get_yticks()
-    lat_labels = []
-    for y in lat_ticks:
-        lat_labels.append(lat_label(y, 2))
-    ax.set_yticklabels(lat_labels)
+    if both == "all" or both =="lon":
+        lon_ticks = ax.get_xticks() - 360
+        lon_labels = []
+        for x in lon_ticks:
+            lon_labels.append(lon_label(x, 2))
+        ax.set_xticklabels(lon_labels[:-1], size = 12)
+        ax.tick_params(axis="x", labelrotation=45)
+    if both == "all" or both =="lat":
+        ax.locator_params(axis='y', nbins=6)
+        lat_ticks = ax.get_yticks()
+        lat_labels = []
+        for y in lat_ticks:
+            lat_labels.append(lat_label(y, 2))
+        ax.set_yticklabels(lat_labels, size = 12)
 
 
 def create_mask(depth, ice_mask):
@@ -229,7 +270,7 @@ def plot_timeseries_comparison(
     - ax: Axis object representing the main plot
     - all_means: List containing the means of all experiments' data
     """
-    colors = ["slategrey", "deeppink", "orange", "dodgerblue"]
+    colors = ["slategrey", "deeppink", "dodgerblue", "orange"]
     experiment_full = plot_info["experiment_full"]
     all_means = []
     size = 16
@@ -336,7 +377,7 @@ def plot_timeseries_comparison(
         )
         linearity[:935] = np.nan
         ax.plot(linearity, color="black", LineStyle="dashed", label="non-linearity")
-        ax.axvline(year_of_divergence, color="black", linewidth=2, LineStyle="dashdot")
+        ax.axvline(year_of_divergence, color="black", linewidth=2)
         ax.axhline(0, color="grey")
 
     ax.set_ylabel(plot_info["ylabel"], fontsize = size)

@@ -28,7 +28,8 @@ from config_options import config_timeseries
 def main():
     var = "theta"
 
-    experiments = ["CTRL", "LENS", "TEMP", "WIND"]
+    experiments = ["CTRL", "LENS", "WIND", "TEMP"]
+    #experiments = ["CTRL", "LENS", "TEMP", "WIND"]
     ensemble = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     data = read_timeseries(experiments, ensemble, var)
@@ -41,15 +42,16 @@ def main():
 
     plot_timeseries_comparison(ax, data, experiments, ensemble, plot_info)
     ax.set_title("Potential temperature pre-industrial mean anomaly", fontsize = 16, fontweight = 'bold')
-    ax.axvline(935, color = 'black', linewidth=2, alpha=0.8)
-    ax.axvline(967, color = 'black', linewidth=2, alpha=0.8, LineStyle = 'dotted')
-    ax.axvline(1827, color = 'black', linewidth=2, alpha=0.8, LineStyle = 'dotted')
-    plt.text((1996-1920)*12, -1.4, "THERMO\n|| NONE", horizontalalignment='right', color = "black", fontsize = 12, fontweight = "bold")
-    plt.text((2003-1920)*12, -1.4, "WIND \n|| ALL", color="black", fontsize = 12, fontweight = "bold")
-    plt.text((2020-1920)*12, -1.4, "NONE \n|| ALL", color="black", fontsize = 12, fontweight = "bold")
-    plt.text((2070-1920)*12, -1.4, "THERMO\n|| ALL", horizontalalignment='right', color="black", fontsize = 12, fontweight = "bold")
+    # ax.axvline(935, color = 'black', linewidth=2, alpha=0.8)
+    # ax.axvline(967, color = 'black', linewidth=2, alpha=0.8)
+    # ax.axvline(1169, color = 'black', linewidth=2, alpha=0.8)
+    # ax.axvline(1827, color = 'black', linewidth=2, alpha=0.8)
+    # plt.text((1996-1920)*12, -1.4, "THERMO\n diverges\n NONE", horizontalalignment='right', color = "black", fontsize = 12, fontweight = "bold")
+    # plt.text((2002-1920)*12, -1.4, "ALL \ndiverges \nWIND", color="black", fontsize = 12, fontweight = "bold")
+    # plt.text((2019-1920)*12, -1.4, "ALL\ndiverges \nNONE", color="black", fontsize = 12, fontweight = "bold")
+    # plt.text((2070-1920)*12, -1.4, "ALL\n diverges\n THERMO", horizontalalignment='right', color="black", fontsize = 12, fontweight = "bold")
     
-    fig.savefig(file_out, bbox_inches='tight', transparent=False)
+    fig.savefig(file_out, bbox_inches='tight', transparent=True)
     #plt.show()
 
 

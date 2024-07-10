@@ -42,10 +42,10 @@ def calc_average(experiments, var):
     return expy_vals
 
 def main():
-    experiments = ["CTRL", "WIND"]
+    experiments = ["LENS", "WIND"]
     expy_vals = calc_average(experiments, "THETA")
 
-    filename = f"{experiments[1]}_pvalue.nc"
+    filename = f"{experiments[1]}_temp.nc"
     # save incase the next bit dies RIP
     expy_vals.to_netcdf(filename)
 
@@ -67,7 +67,7 @@ def main():
         coords={'lat':expy_vals.YC.values, 'lon': expy_vals.XC.values}
     )
 
-    filename = f"{experiments[1]}_pvalue.nc"
+    filename = f"{experiments[1]}_temp.nc"
     # save incase the next bit dies RIP
     trend.to_netcdf(filename)
     

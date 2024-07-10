@@ -100,14 +100,14 @@ def comparison(data, set_up, graph_params, graph_params_anom, experiment, file_o
     cbar_ax = fig.add_axes([0.05, 0.525, 0.02, 0.4])
     cbar = plt.colorbar(cs_diag, cax=cbar_ax, orientation='vertical')
     cbar.set_ticks(ticks)
-    cbar.set_label("Potential Temperature (°C)")
+    #cbar.set_label("Potential Temperature (°C)")
     cbar.ax.yaxis.set_ticks_position('left')
 
     ticks=np.arange(graph_params_anom["low_val"], graph_params_anom["high_val"]+0.1, graph_params_anom["interval"])
     cbar_ax = fig.add_axes([0.05, 0.1, 0.02, 0.4])
     cbar = plt.colorbar(cs_anom, cax=cbar_ax, orientation='vertical')
     cbar.set_ticks(ticks)
-    cbar.set_label("Potential Temperature Anomaly (°C)")
+    #cbar.set_label("Potential Temperature Anomaly (°C)")
     cbar.ax.yaxis.set_ticks_position('left')
 
     fig.suptitle(graph_params["title"], fontsize=16)
@@ -196,23 +196,28 @@ def quiver_func(ax, u, v, lat, lon, chunk, key = True):
             q, 0.94, 0.935, 0.1, r"$0.1 m/s$", labelpos="E", coordinates="figure"
         )
 
-def trend_quiver_func(ax, u, v, time, set_up, timescale = 1200, key = True):
+def trend_quiver_func(ax, u, v, time, set_up, key = True):
     import scipy.stats
-    slope_u = np.empty(np.shape(u[0,...]))
-    slope_v = np.empty(np.shape(v[0,...]))
+    slope_u = np.full(np.shape(u[0,...]), np.nan)
+    slope_v = np.full(np.shape(v[0,...]), np.nan)
     
     for lat in range(0, u.shape[1], 30):
         for lon in range(0, u.shape[2], 30):
-            slope_u[lat, lon] = scipy.stats.linregress(u[:, lat, lon], time).slope / timescale
-            slope_v[lat, lon] = scipy.stats.linregress(v[:, lat, lon], time).slope / timescale
+            slope_u[lat, lon] = scipy.stats.linregress(time, u[:, lat, lon]).slope 
+            slope_v[lat, lon] = scipy.stats.linregress(time, v[:, lat, lon]).slope
+            print(slope_u[lat,lon], slope_v[lat, lon])
+            if abs(slope_v[lat, lon]) or abs(slope_u[lat, lon]) > 10:
+                slope_v[lat, lon] == 0
+                slope_u[lat, lon] == 0
             if scipy.stats.linregress(u[:, lat, lon], time).pvalue < 0.05 and scipy.stats.linregress(v[:, lat, lon], time).pvalue < 0.05:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='white', scale = 25, width=0.008)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='white', scale = 10, width=0.008)
             elif scipy.stats.linregress(u[:, lat, lon], time).pvalue < 0.05 or scipy.stats.linregress(v[:, lat, lon], time).pvalue < 0.05:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='grey', scale = 25, width=0.008)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='grey', scale = 10, width=0.008)
             else:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon],slope_u[lat, lon], slope_v[lat, lon], color='grey', scale = 25, width=0.003)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon],slope_u[lat, lon], slope_v[lat, lon], color='grey', scale = 10, width=0.003)
+    print(np.nanmax(slope_v), np.nanmin(slope_v))
     if key:
-        ax.quiverkey(q, 0.938, 0.495, 3, r'$3 \frac{m/s}{cent.}$', color='k', labelpos='E', coordinates='figure')
+        ax.quiverkey(q, 0.938, 0.495, 2, r'$2 \frac{m/s}{cent.}$', color='k', labelpos='E', coordinates='figure')
 
 def plot_contour(
     ax, data, set_up, graph_params, title, hide_ticks_x=True, hide_ticks_y=True
