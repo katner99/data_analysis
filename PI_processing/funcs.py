@@ -55,6 +55,18 @@ def read_data(var, UC):
 
     return input_data, data
 
+def chop_slice(data, var, option = 1):
+    """ function to chop the slices needed"""
+    from config_options import lon_slices, lat_slices
+    sliced_data = data[var].sel(XC = lon_slices[0], method = "nearest")
+
+    if option == 1:
+        sliced_data = sliced_data.sel(YG = slice(lat_slices[0], lat_slices[1]))
+    elif option == 2:
+        sliced_data = sliced_data.sel(YC = slice(lat_slices[0], lat_slices[1]))
+
+    return sliced_data.values
+
 def read_timeseries(experiments, ensemble, var):
     """
     This function reads time series data from NetCDF files for a given set of experiments
