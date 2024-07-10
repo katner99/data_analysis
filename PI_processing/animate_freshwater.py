@@ -7,40 +7,34 @@ from plots import read_mask
 from calcs import monthly_average
 from directories_and_paths import output_path
 
-exp = "LENS"
-filepath_force = f"{output_path}{exp}_files_temp/oceFWflx.nc"
-filepath_ctrl = f"{output_path}CTRL_files_temp/oceFWflx.nc"
+def animate_comparison(var, exp_1, exp_2 = "CTRL", start = 1920, stop = 2101):
+    filepaths = [f"{output_path}{exp}_files_temp/oceFWflx.nc" for exp in [exp_1, exp_2]]
+    datasets = [xr.open_dataset(filepath, decode_times=False) for filepath in filepaths]
+    data = [monthly_average(dataset[var].values[(start - 1920)*12:(stop - 1920)*12,...]* 3600 * 24 * 365 / 1000) for dataset in datasets]
+    DATA = data[0] - data[1]
 
-dataset_force = xr.open_dataset(filepath_force, decode_times=False)
-dataset_ctrl = xr.open_dataset(filepath_ctrl, decode_times=False)
+    set_up_data = xr.open_dataset(f"{output_path}average_CTRL_1920-1950.nc", decode_times=False)
+    set_up = read_mask(set_up_data)
 
-data_force = monthly_average(dataset_force["oceFWflx"].values* 3600 * 24 * 365 / 1000)
-data_ctrl = np.nanmean(dataset_ctrl["oceFWflx"].values* 3600 * 24 * 365 / 1000, axis = 0)
-DATA = data_force - data_ctrl
-print (np.shape(DATA))
+    fig,ax = plt.subplots()
 
-set_up_data = xr.open_dataset(f"{output_path}average_CTRL_1920-1950.nc", decode_times=False)
-set_up = read_mask(set_up_data)
+    def animate(i):
+        ax.clear()
+        min_val = -2
+        max_val = -min_val
+        ax.contourf(set_up["X"], set_up["Y"], DATA[i,:,:], cmap="PRGn_r",extend="both",levels=np.linspace(min_val, max_val, 15))
+        ax.contourf(set_up["X"], set_up["Y"],set_up["land_mask"],cmap=matplotlib.colors.ListedColormap(set_up["colors"]))
+        ax.contour(
+            set_up["X"], set_up["Y"], set_up["mask"], 2, cmap="Greys", linestyles="dashed"
+        )
+        ax.set_title(f"{exp_1} - {exp_2} {start + i}")
+  
+    ani = animation.FuncAnimation(fig,animate,frames=50, interval = 100)
 
-fig,ax = plt.subplots()
+    ani.save(f"{exp_1}vs{exp_2}_freshwater_{start}.gif", fps = 2)
+    plt.show()
 
-count = 0
-year = 1920
+def main():
+    # example use
+    animate_comparison("oceFWflx", "LENS", exp_2 = "CTRL", start = 1920, stop = 2101)
 
-def animate(i):
-    ax.clear()
-    min_val = -2
-    max_val = -min_val
-    ax.contourf(set_up["X"], set_up["Y"], DATA[i,:,:], cmap="PRGn_r",extend="both",levels=np.linspace(min_val, max_val, 15))
-    ax.contourf(set_up["X"], set_up["Y"],set_up["land_mask"],cmap=matplotlib.colors.ListedColormap(set_up["colors"]))
-    ax.contour(
-        set_up["X"], set_up["Y"], set_up["mask"], 2, cmap="Greys", linestyles="dashed"
-    )
-    ax.set_title(f"{exp} - CTRL {year + i}")
-
-
-interval = 2#in seconds     
-ani = animation.FuncAnimation(fig,animate,frames=181, interval = 100)
-
-ani.save(f"{exp}_freshwater.mp4", fps = 2)
-plt.show()
