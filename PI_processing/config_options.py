@@ -9,7 +9,7 @@ import xarray as xr
 import numpy as np
 from mitgcm_python.grid import Grid
 import matplotlib
-from utils.funcs import find_nearest, read_variable, ttest_pval
+from tools.funcs import find_nearest, read_variable, ttest_pval
 from directories_and_paths import grid_filepath
 
 ## Constants
