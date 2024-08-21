@@ -2,10 +2,10 @@
 Plotting script for generating comparison plots of oceanographic data.
 """
 
-from config_options import config_comparison
-from tools.plots import read_mask
-from tools.plots_2d import comparison
-from directories_and_paths import output_path
+from .config_options import config_comparison
+from .tools.plots import read_mask
+from .tools.plots_2d import comparison
+from .directories_and_paths import output_path
 
 import sys
 import xarray as xr
