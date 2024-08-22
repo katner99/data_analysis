@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import xarray as xr
 from mitgcm_python.utils import add_time_dim
-from directories_and_paths import *
+from tools.directories_and_paths import *
 from config_options import *
 
 def monthly_average(data):
@@ -27,7 +27,7 @@ def calc_transport(input_data, grid, lat_range, lon_range, option="total"):
     VEL = np.ma.masked_where(mask, vel)
     if option == "south":
         VEL = np.ma.masked_where(VEL > 0, VEL)
-    return sv * np.sum(-VEL * dX * dZ, axis=(-2, -1))
+    return SV * np.sum(-VEL * dX * dZ, axis=(-2, -1))
 
 
 def append_transport(n_years, start_year, filepath, grid, lat_range, lon_range):

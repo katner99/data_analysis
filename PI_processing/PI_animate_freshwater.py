@@ -3,9 +3,9 @@ import xarray as xr
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from plots import read_mask 
-from calcs import monthly_average
-from directories_and_paths import output_path
+from tools.plots import read_mask 
+from tools.calcs import monthly_average
+from .directories_and_paths import output_path
 
 def animate_comparison(var, exp_1, exp_2 = "CTRL", start = 1920, stop = 2101):
     filepaths = [f"{output_path}{exp}_files_temp/oceFWflx.nc" for exp in [exp_1, exp_2]]

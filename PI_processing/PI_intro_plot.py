@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
 
 import numpy as np
 import xarray as xr
@@ -79,7 +80,7 @@ def read_bottom_velocity(filepath):
     chunk = 10
     return speed, u, v, set_up, graph_params, chunk
 
-
+ 
 def read_winds(filename):
     """
     Reads wind data from a specified file and extracts the u and v wind components starting from the year 2000.
@@ -169,7 +170,7 @@ def plot_intro(
         hide_ticks_y=False,
     )
     cs_vel = plot_contour(
-        axs[1], speed, set_up, graph_params_vel, "b. Bottom Velocity (m/s)"
+        axs[1], speed, set_up, graph_params_vel, "b. Bottom Velocity (m/s)", option="spring",
     )
     cs_temp = plot_contour(
         axs[2],
@@ -224,6 +225,10 @@ def plot_intro(
     cbar_ax = fig.add_axes([0.92, 0.1, 0.02, 0.35])
     cbar = plt.colorbar(cs_bathy, cax=cbar_ax)
     cbar.set_ticks(ticks)
+
+    box = Polygon([[250, -75], [260, -75], [260, -71.5], [250, -71.5]], fill = False, closed = True, edgecolor = "black", linewidth = 3, label = "timeseries average")
+    axs[0].add_patch(box)
+    axs[0].legend(loc="lower left")
 
     fig.savefig("introduction_plot.png", transparent=False)
 

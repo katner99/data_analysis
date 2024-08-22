@@ -68,13 +68,14 @@ def main():
         for exp in ["LENS", "WIND", "TEMP"]
     ]
     input_data = [xr.open_dataset(filepath, decode_times = False) for filepath in filepaths]
-    vel = [input.geostrophy.values for input in input_data]
+    vel = [input.pressure.values for input in input_data]
     z = input_data[0].Z.values
     lat = input_data[0]["YC"]
 
     color_scheme = "PiYG_r"
     experiment = ["ALL", "WIND", "THERMO"]
-    low_val = -1e-13
+    low_val = -0.01
+    print(np.nanmin(vel[0]), np.nanmax(vel[0]))
     high_val = -low_val
     print(low_val)
     step = 15
@@ -95,7 +96,7 @@ def main():
         axs[i].tick_params(axis='x', labelsize=16, rotation=45)
         axs[i].tick_params(axis='y', labelsize=16)
         
-        if i > 1:
+        if i > 0:
             axs[i].get_yaxis().set_visible(False)
             axs[i].set_ylabel("Depth (m)", fontsize = font_size)
         
@@ -111,11 +112,12 @@ def main():
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.82, 0.15, 0.02, 0.7])
     cbar = fig.colorbar(cv, cax=cbar_ax)
-    cbar.set_label("m s$^{-1}$ century$^{-1}$", fontsize = font_size)
-    plt.suptitle("geostrophic anomaly from the trends in density anomaly (m s$^{-1}$ century$^{-1}$)", fontsize = font_size+2, weight = "bold")
+    cbar.set_label("Pa century$^{-1}$", fontsize = font_size)
+    cbar.set_ticks([np.arange(-0.01, 0.01, 0.005)])
+    plt.suptitle("Pressure anomaly from the trends in density anomaly (Pa century$^{-1}$)", fontsize = font_size+2, weight = "bold")
     
-    fig.savefig("geostrophy.png")
-    plt.show()
+    fig.savefig("pressure.png")
+    #plt.show()
         
 if __name__ == '__main__':
     main() # run the program

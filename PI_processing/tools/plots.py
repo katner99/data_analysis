@@ -1,12 +1,8 @@
-import matplotlib.pyplot as plt
-from directories_and_paths import output_path
+from tools.directories_and_paths import output_path
 import sys
 import xarray as xr
-from matplotlib import animation
-
-from PIL import Image, ImageFilter
 import numpy as np
-from calcs import moving_average
+from .calcs import moving_average
 from mitgcm_python.grid import Grid
 
 def read_var_fluxes(var_name):
@@ -206,7 +202,7 @@ def read_mask(input_data=None, cut=None, lat_range=None, lon_range=None):
         dict: Dictionary containing setup information for plotting including latitude, longitude, depth, ice mask, land mask, combined mask, colors, X, and Y coordinates.
     """
     import xarray as xr
-    from directories_and_paths import output_path
+    from tools.directories_and_paths import output_path
 
     if input_data is None:
         input_data = xr.open_dataset(

@@ -2,7 +2,7 @@ import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import numpy as np
-from plots import zoom_shelf, pretty_labels
+from .plots import zoom_shelf, pretty_labels
 from mitgcm_python.plot_utils.labels import lat_label, lon_label
 
 def comparison(data, set_up, graph_params, graph_params_anom, experiment, file_out, save=True, show=False, linearity=False, zoom = None):

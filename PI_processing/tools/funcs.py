@@ -3,7 +3,7 @@ import sys
 import xarray as xr
 import os
 from mitgcm_python.utils import mask_3d, add_time_dim, z_to_xyz, apply_mask
-from directories_and_paths import *
+from tools.directories_and_paths import *
 from scipy.interpolate import interp2d
 
 

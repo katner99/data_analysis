@@ -1,9 +1,9 @@
 from config_options import config_comparison
-from plots import read_mask, pretty_labels, zoom_shelf
+from .tools.plots import read_mask, pretty_labels, zoom_shelf
 from directories_and_paths import output_path, grid_filepath
 from mitgcm_python.grid import Grid
 import matplotlib.pyplot as plt
-from plots_2d import contour_func
+from .tools.plots_2d import contour_func
 import sys
 import xarray as xr
 import numpy as np
@@ -54,13 +54,13 @@ def comparison_plot(data, set_up, graph_params, graph_params_anom, experiment, f
     anom_plt = contour_func(axs[4], data[1] - data[0], set_up, graph_params, hide_ticks_x = True, hide_ticks_y = hide_ticks_y)
     axs[4].contourf(set_up["X"], set_up["Y"], LC, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
     contour_func(axs[7], data[2] - data[0], set_up, graph_params, hide_ticks_x = True, hide_ticks_y = hide_ticks_y)
-    axs[7].contourf(set_up["X"], set_up["Y"], WC, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
+    axs[7].contourf(set_up["X"], set_up["Y"], TC, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
     contour_func(axs[10], data[3] - data[0], set_up, graph_params, hide_ticks_x = False, hide_ticks_y = hide_ticks_y)
-    axs[10].contourf(set_up["X"], set_up["Y"], TC, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
+    axs[10].contourf(set_up["X"], set_up["Y"], WC, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
     contour_func(axs[8], data[1] - data[2], set_up, graph_params, hide_ticks_x = True, hide_ticks_y = hide_ticks_y)
-    axs[8].contourf(set_up["X"], set_up["Y"], WL, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
+    axs[8].contourf(set_up["X"], set_up["Y"], TL, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
     contour_func(axs[11], data[1] - data[3], set_up, graph_params, hide_ticks_x = False, hide_ticks_y = hide_ticks_y)
-    axs[11].contourf(set_up["X"], set_up["Y"], TL, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
+    axs[11].contourf(set_up["X"], set_up["Y"], WL, levels=[-np.inf, 0.05], colors='none', hatches=['//'], alpha=0)
 
     if linearity:
         residual = data[0] + data[1] - data[2] - data[3]
@@ -112,15 +112,9 @@ def comparison_plot(data, set_up, graph_params, graph_params_anom, experiment, f
     cbar_ax = fig.add_axes([0.1, 0.04, 0.8, 0.02])  # Bottom color bar
     cbar = plt.colorbar(main_plt, cax=cbar_ax, orientation='horizontal')
     cbar.set_ticks(ticks)
+    cbar.set_label('Potential Temperature (degC)', fontsize = 15)
     cbar.ax.xaxis.set_ticks_position('bottom')
     cbar.ax.tick_params(labelsize=16)
-
-    # ticks=np.arange(graph_params_anom["low_val"], graph_params_anom["high_val"]+0.1, graph_params_anom["interval"])
-    # cbar_ax = fig.add_axes([0.525, 0.04, 0.4, 0.02])  # Bottom color bar
-    # cbar = plt.colorbar(anom_plt, cax=cbar_ax, orientation='horizontal')
-    # cbar.set_ticks(ticks)
-    # cbar.ax.xaxis.set_ticks_position('bottom')
-    # cbar.ax.tick_params(labelsize=16)
 
     fig.suptitle(graph_params["title"], fontsize=20, weight="bold")
 
@@ -142,7 +136,7 @@ def main():
     period = "2070-2100"
     filepaths = [
         output_path + "average_" + ens + "_" + period + ".nc"
-        for ens in ["CTRL", "LENS", "WIND", "TEMP"]
+        for ens in ["CTRL", "LENS", "TEMP", "WIND"]
     ]
     file_out = f"mega_comparison{var}_{period}.png"
 
@@ -152,7 +146,7 @@ def main():
         except FileNotFoundError:
             sys.exit(f"Stopped - Could not find input file {filepath}")
 
-    experiment = ["NONE", "ALL", "WIND", "THERMO"]
+    experiment = ["NONE", "ALL", "THERMO", "WIND"]
 
     input_data = [
         xr.open_dataset(filepath, decode_times=False) for filepath in filepaths

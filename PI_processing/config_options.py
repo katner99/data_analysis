@@ -9,8 +9,8 @@ import xarray as xr
 import numpy as np
 from mitgcm_python.grid import Grid
 import matplotlib
-from tools.funcs import find_nearest, read_variable, ttest_pval
-from directories_and_paths import grid_filepath
+from tools.funcs import find_nearest, ttest_pval
+from tools.directories_and_paths import grid_filepath
 
 ## Constants
 SV = 1e-6  # Sverdrups
@@ -75,14 +75,13 @@ def config_timeseries(var, data, experiments, ensemble):
     return plot_info
 
 
-def config_comparison(var, input_data, grid, loc=None, period=None, year=1920, calc_pval="trend"):
+def config_comparison(var, input_data, loc=None, period=None, year=1920, calc_pval="trend"):
     """
     Configures parameters and data for a comparison plot of oceanographic variables.
 
     Parameters:
     - var (str): Variable to be plotted.
     - input_data (list): List of datasets.
-    - grid (object): Model grid object.
     - loc (str): Location (optional).
     - period (str): Time period (optional).
     - year (int): Base year for mean calculation (optional).
@@ -108,14 +107,17 @@ def config_comparison(var, input_data, grid, loc=None, period=None, year=1920, c
         return [np.where(np.sum(p["pvalue"] < 0.05, axis=0) >= 5, 0, 1) for p in data] if calc_pval == "trend" else ttest_pval(data)
 
     if loc == "trend":
+         # the followinf makes it possible to display SHIfwflx with the ocean freshwater fluxes
+
+        white_trans = matplotlib.colors.colorConverter.to_rgba("white", alpha=0.0)
         trends = {
-            "SALT": {"factor": 3600 * 24 * 365 * 100, "min_val": int(np.min(data[0])), "max_val": int(np.max(data[0])) + 1, "interval": 1, "color_scheme": "PRGn_r", "title": "Salinity trend per century"},
-            "oceFWflx": {"factor": 100, "min_val": -2, "max_val": 2, "interval": 0.5, "color_scheme": "PRGn_r", "title": "Freshwater Fluxes (m/yr/century)"},
+            "SALT": {"factor": 3600 * 24 * 365 * 100, "min_val": -2, "max_val": 2, "interval": 1, "color_scheme": "PRGn_r", "title": "Salinity trend per century"},
+            "oceFWflx": {"factor": 100, "min_val": -1, "max_val": 1, "interval": 0.25, "color_scheme": "PRGn_r", "title": "Freshwater Fluxes (m/yr/century)"},
             "SIheff": {"factor": 100, "min_val": -0.5, "max_val": 0.5, "interval": 0.5, "color_scheme": "nipy_spectral", "title": "Sea Ice thickness trend"},
-            "SHIfwFlx": {"factor": -100, "min_val": -6, "max_val": 6, "interval": 2.5, "color_scheme": matplotlib.colors.LinearSegmentedColormap.from_list("rb_cmap", ["steelblue", "skyblue", "white", "orchid", "purple"], 512), "title": "Melt (m/yr/century)"},
+            "SHIfwFlx": {"factor": -100, "min_val": -6, "max_val": 6, "interval": 2.5, "color_scheme": matplotlib.colors.LinearSegmentedColormap.from_list("rb_cmap", ["steelblue", "skyblue", white_trans, "orchid", "purple"], 512), "title": "Melt (m/yr/century)"},
         }
         trend = trends.get(var, {})
-        data = [input.trend.values[:, :, 0] * trend.get("factor") for input in input_data]
+        data = [input.trend.mean(dim="ensemble_member").values * trend.get("factor") for input in input_data]
         graph_params = configure_params(data, trend.get("min_val"), trend.get("max_val"), trend.get("interval"), trend.get("color_scheme"), trend.get("title"))
         graph_params["pvalue"] = get_pval(input_data)
         

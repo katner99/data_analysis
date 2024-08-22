@@ -20,8 +20,8 @@ Usage:
 """
 import matplotlib.pyplot as plt
 
-from funcs import read_timeseries
-from plots import plot_timeseries_comparison
+from .tools.funcs import read_timeseries
+from .tools.plots import plot_timeseries_comparison
 from config_options import config_timeseries
 
 
@@ -41,7 +41,7 @@ def main():
     fig, ax = plt.subplots(figsize=(15, 10), sharex=True)
 
     plot_timeseries_comparison(ax, data, experiments, ensemble, plot_info)
-    ax.set_title("Potential temperature pre-industrial mean anomaly", fontsize = 16, fontweight = 'bold')
+    ax.set_title("Potential temperature anomaly from pre-industrial mean", fontsize = 16, fontweight = 'bold')
     # ax.axvline(935, color = 'black', linewidth=2, alpha=0.8)
     # ax.axvline(967, color = 'black', linewidth=2, alpha=0.8)
     # ax.axvline(1169, color = 'black', linewidth=2, alpha=0.8)
