@@ -24,7 +24,7 @@ def concatenate_var_years(args):
     for file in filepaths:
         data = xr.open_dataset(file, decode_times=False)
         if option == "total":
-            total_data.append(data[var])
+            total_data.append(data[var][:,0,...])
         elif option == "slice":
             from config_options import lat_slices, lon_slices
             sliced_data = data[var].sel(XC = lon_slices, method = "nearest")
@@ -97,8 +97,8 @@ def main():
     # read in the experiment, set up ensemble members and the variable to run
     experiment = str(sys.argv[1])
     ensemble_members = list(range(1, 10))  
-    var = "THETA"
-    option = "slice" # current options available: total, slice
+    var = "UVEL"
+    option = "total" # current options available: total, slice
 
     args_list = [(experiment, var, option, str(ens_member)) for ens_member in ensemble_members]
     
@@ -109,7 +109,7 @@ def main():
 
     ensemble_spread = xr.concat(results, dim='ensemble_member').mean(dim='ensemble_member')
 
-    filename = f"{output_path}{experiment}_files_temp/{var}_spread.nc"
+    filename = f"{output_path}{experiment}_files_temp/{var}.nc"
     # save incase the next bit dies RIP
     ensemble_spread.to_netcdf(filename)
 
@@ -134,7 +134,7 @@ def calc_trend():
         data = dataset[var].values
         depth = dataset.Z.values
 
-    time = dataset.time.values
+    time = (dataset.time.values)/365 # convert from days to year
     lat = dataset.YC.values
     lon = dataset.XC.values
 
