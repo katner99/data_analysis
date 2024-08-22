@@ -1,9 +1,9 @@
 from config_options import config_comparison
-from .tools.plots import read_mask, pretty_labels, zoom_shelf
-from directories_and_paths import output_path, grid_filepath
+from tools.plots import read_mask, pretty_labels, zoom_shelf
+from tools.directories_and_paths import output_path, grid_filepath
 from mitgcm_python.grid import Grid
 import matplotlib.pyplot as plt
-from .tools.plots_2d import contour_func
+from tools.plots_2d import contour_func
 import sys
 import xarray as xr
 import numpy as np
