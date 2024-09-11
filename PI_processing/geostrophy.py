@@ -5,9 +5,9 @@ Geostrophic Analysis Script: Calculates and visualizes the geostrophic component
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
-from .tools.funcs import chop_slice, read_data
-from .directories_and_paths import output_path
-from .config_options import LAT_SLICES
+from tools.funcs import chop_slice, read_data
+from tools.directories_and_paths import output_path
+from config_options import LAT_SLICES
 
 def pressure_gradient(exp):
     """
@@ -133,6 +133,8 @@ def plot_experiments(axs, row, graph_params, lat, z, data):
         if row == 0:
             axs[row, col].set_title(graph_params['experiment'][col], weight="bold", fontsize=graph_params['font_size'])
             axs[row, col].get_xaxis().set_visible(False)
+        elif row == 4:
+            axs[row, col].get_xaxis().set_visible(True)
         else:
             axs[row, col].get_xaxis().set_visible(False)
     
@@ -164,7 +166,7 @@ def plot_geostrophy():
     # Create subplots with each variable on a new row
     fig, axs = plt.subplots(nrows=len(options_to_plot), ncols=3, 
                             gridspec_kw={"hspace": 0.05, "wspace": 0.05}, 
-                            figsize=(12, 5 * len(options_to_plot)))
+                            figsize=(18, 5 * len(options_to_plot)))
 
     for idx, option in enumerate(options_to_plot):
         if option == "total_vel":
@@ -183,7 +185,7 @@ def plot_geostrophy():
                 _, total_vel = read_data("UVEL", 0)
                 sheer_vel = [total_vel[i] - surface_vel[i] for i in range(3)]
                 vel = mask_values(sheer_vel)
-                title = "Modelled shear velocity"
+                title = "Modelled velocity shear"
 
         elif option in ["sheer_calc", "total_calc"]:
             filepaths = [f"{output_path}{exp}_files_temp/geostrophy.nc" for exp in ["LENS", "TEMP", "WIND"]]
@@ -207,8 +209,8 @@ def plot_geostrophy():
         graph_params = {
             'color_scheme': "PiYG_r",
             'experiment': ["ALL", "THERMO", "WIND"],
-            'low_val': -5e-05,
-            'high_val': 5e-05,
+            'low_val': -0.02,
+            'high_val': 0.02,
             'step': 15,
             'font_size': 20,
         }
@@ -217,12 +219,18 @@ def plot_geostrophy():
         cv = plot_experiments(axs, idx, graph_params, lat, z, vel)
         axs[idx, 0].set_ylabel(title, fontsize=graph_params['font_size'] - 4, weight="bold")
 
-    # Adjust and save the plot
-    fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.03, 0.7])
-    fig.colorbar(cv, cax=cbar_ax)
+    map = plt.imread("amundsen_map_profile.png")
+    map_ax = fig.add_axes([0, 0.85, 0.25, 0.15])
+    map_ax.imshow(map)
+    map_ax.axis("off")
 
-    plt.suptitle("Geostrophy analysis (m s$^{-1}$ century$^{-1}$)", 
+    # Adjust and save the plot
+    fig.subplots_adjust(right=0.8, top = 0.85)
+    cbar_ax = fig.add_axes([0.87, 0.1, 0.03, 0.7])
+    cbar = fig.colorbar(cv, cax=cbar_ax)
+    cbar.set_ticks(np.arange(-0.02, 0.025, 0.005))
+
+    plt.suptitle("Geostrophy analysis trends(m s$^{-1}$ century$^{-1}$)", 
                  fontsize=graph_params['font_size'] + 2, weight="bold", y=0.925)
 
     fig.savefig("geostrophy.png")
@@ -231,7 +239,7 @@ def main():
     """
     Main function to calculate and save geostrophic data.
     """
-    exp = "WIND"
+    exp = "LENS"
     pressure, z = pressure_gradient(exp)
     geostrophy_dataset = geostrophy(pressure, z)
     geostrophy_dataset.to_netcdf(f"{output_path}{exp}_files_temp/geostrophy.nc")

@@ -8,9 +8,9 @@ import numpy as np
 import xarray as xr
 import os
 
-from funcs import read_variable, find_nearest
-from plots import create_mask
-from directories_and_paths import *
+from tools.funcs import read_variable, find_nearest
+from tools.plots import create_mask
+from tools.directories_and_paths import *
 from mitgcm_python.grid import Grid
 #from PI_timeseries import plot_comparison
 
@@ -72,7 +72,9 @@ def main():
     # pine island coastal box;
     lon_box_1 = [find_nearest(lon, 95+180), find_nearest(lon, 115+180)]
     lat_box_1 = [find_nearest(lat, -75), find_nearest(lat, -73)]
-    box_1 = Polygon([[250, -75], [260, -75], [260, -71.5], [250, -71.5]], fill = False, closed = True, edgecolor = "magenta", linewidth = 3, label = "profile average")
+    #box = Polygon([[250, -75], [260, -75], [260, -71.5], [250, -71.5]], fill = False, closed = True, edgecolor = "black", linewidth = 3, label = "timeseries average")
+    #box = 
+    # box_1 = Polygon([[250, -75], [260, -75], [260, -71.5], [250, -71.5]], fill = False, closed = True, edgecolor = "magenta", linewidth = 3, label = "profile average")
     #box_2 = Polygon([[252.8, -73], [255, -73], [255, -73], [252.8, -73]], fill = False, closed = True, edgecolor = "mediumorchid", linewidth = 3, label = "trough")
     #box_3 = Polygon([[250, -72], [250, -72], [250, -70], [250, -70]], fill = False, closed = True, edgecolor = "hotpink", linewidth = 3, label = "undercurrent 2")
     #box_4 = Polygon([[243, -72], [243, -72], [243, -70.5], [243, -70.5]], fill = False, closed = True, edgecolor = "crimson", linewidth = 3, label = "undercurrent 3")
@@ -93,16 +95,19 @@ def main():
     cs = ax.contourf(X, Y, depth, extend="max", cmap="bone_r", levels=np.linspace(0, 4000, 20))
     ax.contourf(X, Y, land_mask, cmap=matplotlib.colors.ListedColormap(colors))
     ax.contour(X, Y, mask, 2, cmap="Greys", linestyles="dashed")
-    ax.add_patch(box_1)
+    ax.vlines(x=238, ymin=-74, ymax=-71.5, color='magenta', linewidth = 3) # if plotting the velocity profiles, indicate where on the map
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+    #ax.add_patch(box_1)
     #ax.add_patch(box_2)
     #ax.add_patch(box_3)
     #ax.add_patch(box_4)
     #ax.add_patch(box_5)
-    ax.legend()
-    ticks=np.arange(0, 4000, 500)
-    cbar = fig.colorbar(cs)
-    cbar.set_label('Depth (m)', rotation=270, labelpad=15)
-    cbar.set_ticks(ticks)
+    #ax.legend()
+    #ticks=np.arange(0, 4000, 500)
+    #cbar = fig.colorbar(cs)
+    #cbar.set_label('Depth (m)', rotation=270, labelpad=15)
+    #cbar.set_ticks(ticks)
 
     #plot_comparison(ax[1], variables[0], data, experiments, ensemble, ylabel, xlabel, time, title = "general timeseries", file_out = None, smooth = smooth, linearity = linearity)
     #plot_comparison(ax[2], variables[1], data_c, experiments, ensemble, ylabel, xlabel, time, title = "coastal timeseries", file_out = None, smooth = smooth, linearity = linearity)

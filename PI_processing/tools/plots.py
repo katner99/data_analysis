@@ -164,8 +164,8 @@ def read_u_and_v(input_data, option="avg"):
     """
     from mitgcm_python.utils import mask_3d
     from mitgcm_python.plot_utils.latlon import prepare_vel
-    from config_options import days_in_month
-    from directories_and_paths import grid_filepath
+    from config_options import DAYS_IN_MONTH
+    from tools.directories_and_paths import grid_filepath
 
     vvel = input_data.VVEL.values
     uvel = input_data.UVEL.values
@@ -174,8 +174,8 @@ def read_u_and_v(input_data, option="avg"):
     uvel = mask_3d(uvel, grid, gtype="u", time_dependent=True)
     vvel = mask_3d(vvel, grid, gtype="v", time_dependent=True)
 
-    u = np.average(uvel, axis=0, weights=days_in_month)
-    v = np.average(vvel, axis=0, weights=days_in_month)
+    u = np.average(uvel, axis=0, weights=DAYS_IN_MONTH)
+    v = np.average(vvel, axis=0, weights=DAYS_IN_MONTH)
 
     speed, u_plot, v_plot = prepare_vel(u, v, grid, vel_option=option)
     return speed, u_plot, v_plot

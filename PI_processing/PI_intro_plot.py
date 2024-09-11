@@ -4,10 +4,10 @@ from matplotlib.patches import Polygon
 import numpy as np
 import xarray as xr
 
-from plots_2d import plot_contour, quiver_func, trend_quiver_func
-from directories_and_paths import output_path, grid_filepath
-from plots import read_mask, read_u_and_v
-from funcs import find_nearest, read_variable
+from tools.plots_2d import plot_contour, quiver_func, trend_quiver_func
+from tools.directories_and_paths import output_path, grid_filepath
+from tools.plots import read_mask, read_u_and_v
+from tools.funcs import find_nearest, read_variable
 from mitgcm_python.grid import Grid
 
 

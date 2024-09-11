@@ -118,9 +118,11 @@ def plot_slice(axs, fig, col):
         axs[i][col].clabel(cs, cs.levels, inline=True, fmt = lambda x: f'{x:.0e}', fontsize=10)
     
     ticks = np.arange(-0.02, 0.03, 0.01)
-    cbar_ax_SI = fig.add_axes([0.55, 0.035, 0.4, 0.02])
+    cbar_ax_SI = fig.add_axes([0.55, 0.075, 0.4, 0.02])
     cbar_SI = plt.colorbar(cv, cax=cbar_ax_SI, orientation='horizontal')
     cbar_SI.set_ticks(ticks) 
+    cbar_SI.set_label("Velocity trend")
+
     #cbar_SI.ax.tick_params(rotation=45)
     
 
@@ -150,8 +152,8 @@ def just_profiles():
             ax2.get_yaxis().set_ticklabels([])
         else:
             axs[0].set_ylabel("Depth (m)", fontsize = 16)
-            axs[0].legend(['Forced Temperature', 'Control Temperature'], fontsize = 16, loc = 'lower left')
-            ax2.legend(['Forced Salinity', 'Control Salinity'], fontsize = 16, loc = 'upper right', bbox_to_anchor=(0.66, 0.22))
+            axs[0].legend(['Forced Temperature', 'NONE Temperature'], fontsize = 16, loc = 'lower left')
+            ax2.legend(['Forced Salinity', 'NONE Salinity'], fontsize = 16, loc = 'upper right', bbox_to_anchor=(0.66, 0.22))
 
 
 
@@ -177,12 +179,13 @@ def plot_fluxes(axs, fig, col, data_SI, data_SH, exp_names, grid, set_up, graph_
     axs[0][col].set_title("Trends in freshwater fluxes \n from sea-ice and ice shelf \n melting (m yr$^{-1}$ century$^{-1}$)")
 
     ticks_SI = np.arange(-1.5, 1.6, 0.5)
-    cbar_ax_SI = fig.add_axes([0.1, 0.01, 0.4, 0.02])
+    cbar_ax_SI = fig.add_axes([0.1, 0.075, 0.4, 0.02])
     cbar_SI = plt.colorbar(cs_SI, cax=cbar_ax_SI, orientation='horizontal')
     cbar_SI.set_ticks(ticks_SI)
     cbar_SI.ax.xaxis.set_ticks_position('bottom')  # Move the ticks to the bottom
     cbar_SI.ax.tick_params(axis='x', direction='inout', length=0)
     cbar_SI.ax.xaxis.set_tick_params(pad=-12) 
+    cbar_SI.set_label("Sea Ice FW flux trend")
 
     ticks_SH = np.arange(-5, 5.1, 2.5)
     cbar_ax_SH = fig.add_axes([0.1, 0.035, 0.4, 0.02])
@@ -193,6 +196,7 @@ def plot_fluxes(axs, fig, col, data_SI, data_SH, exp_names, grid, set_up, graph_
     cbar_SH.ax.xaxis.set_ticks_position('bottom')  # Move the ticks to the bottom
     cbar_SH.ax.tick_params(axis='x', direction='inout', length=0)
     cbar_SH.ax.xaxis.set_tick_params(pad=-12) 
+    cbar_SH.set_label("Ice shelf FW flux trend")
 
 def plot_all():
     """
@@ -220,6 +224,9 @@ def plot_all():
     plot_fluxes(axs, fig, 0, data_SI, data_SH, exp_names, grid, set_up, graph_params_SI, graph_params_SH, pvalue = True)
     axs[0][0].vlines(x=238, ymin=-74, ymax=-71.5, color='black', linewidth = 3) # if plotting the velocity profiles, indicate where on the map
     plot_slice(axs, fig, 1)
+    plt.subplots_adjust(bottom = 0.15)
+    #plt.text(0, 0.01, "Ice shelf trends")
+    #plt.text(0, -0.01, "Sea ice trends")
     #plot_profiles(axs, input_data_ST)
     fig.savefig(file_out, transparent=False)
     #plt.show()

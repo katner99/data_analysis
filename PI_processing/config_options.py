@@ -124,12 +124,17 @@ def config_comparison(var, input_data, loc=None, period=None, year=1920, calc_pv
     elif loc == "mean":
         means = {
             "oceFWflx": {"factor": 3600 * 24 * 365 / 1000, "min_val": -4, "max_val": 4, "interval": 1, "color_scheme": "PRGn_r", "title": f"Freshwater fluxes ({var}) m/yr"},
-            "SIarea": {"factor": 1, "min_val": 0, "max_val": 1, "interval": 0.25, "color_scheme": "turbo", "title": f"Sea Ice {var}"},
-            "SIheff": {"factor": 1, "min_val": 0, "max_val": 1, "interval": 0.25, "color_scheme": "turbo", "title": f"Sea Ice {var}"},
+            "SIfwmelt": {"factor": 3600 * 24 * 365 / 1000, "min_val": -4, "max_val": 4, "interval": 1, "color_scheme": "PRGn_r", "title": f"Freshwater fluxes ({var}) m/yr"},
+            "SIfwfrz": {"factor": 3600 * 24 * 365 / 1000, "min_val": -4, "max_val": 4, "interval": 1, "color_scheme": "PRGn_r", "title": f"Freshwater fluxes ({var}) m/yr"},
+            "SIarea": {"factor": 1, "min_val": 0, "max_val": 1, "interval": 0.25, "color_scheme": "seismic_r", "title": f"Sea Ice {var}"},
+            "SIheff": {"factor": 1, "min_val": 0, "max_val": 1, "interval": 0.25, "color_scheme": "seismic_r", "title": f"Sea Ice {var}"},
             "THETA": {"factor": 1, "min_val": 0, "max_val": 1, "interval": 0.25, "color_scheme": "coolwarm", "title": "Surface temperature"},
         }
         mean = means.get(var, {})
-        data = [np.nanmean(input[var].values[(year - 1920) * 12:(year + 10 - 1920) * 12] * mean.get("factor"), axis=0) for input in input_data]
+        if var == "oceFWflx":
+            data = [np.nanmean(input[var].mean(dim="ensemble_member").values[(year - 1920) * 12:(year + 10 - 1920) * 12,...] * mean.get("factor"), axis=0) for input in input_data]
+        else:
+            data = [np.nanmean(input[var].values[(year - 1920) * 12:(year + 10 - 1920) * 12,...] * mean.get("factor"), axis=0) for input in input_data]
         graph_params = configure_params(data, mean.get("min_val"), mean.get("max_val"), mean.get("interval"), mean.get("color_scheme"), mean.get("title"))
     
     else:

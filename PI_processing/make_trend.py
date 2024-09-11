@@ -50,7 +50,7 @@ def concatenate_var_years(experiment, var, option, ens_member):
     
     return total_dataset
 
-def create_ensemble_average(experiment, var, option, ensemble_members):
+def create_ensemble_variable(experiment, var, option, ensemble_members):
     """Create ensemble average for a variable across ensemble members."""
     args_list = [(experiment, var, option, str(ens_member)) for ens_member in ensemble_members]
     results = map(lambda args: concatenate_var_years(*args), args_list)
@@ -90,7 +90,7 @@ def calc_trend(experiment, var="DENSITY"):
         press = np.broadcast_to(depth.reshape(1, 50, 1, 1), salt.shape)
         data = density("MDJWF", salt, temp, press)
     else: 
-        filename = f"{output_path}{experiment}_files_temp/{var}.nc"
+        filename = f"{output_path}/data_katherine_turner/total_freshwater_flux_into_the_ocean_{experiment}.nc"
         dataset = xr.open_dataset(filename, decode_times=False)
         if var == "oceFWflx":
             data = dataset[var].values * 3600 * 24 * 365 / 1000 # convert from kg/m^2/s to m/yr
@@ -124,10 +124,10 @@ def calc_trend(experiment, var="DENSITY"):
                 },
         )
     
-    trend_ds.to_netcdf(f"{output_path}{experiment}_files_temp/{var}_trend.nc")
+    trend_ds.to_netcdf(f"{output_path}/data_katherine_turner/total_freshwater_flux_into_the_ocean_{experiment}_trend.nc")
 
 if __name__ == "__main__":
     experiment = sys.argv[1]
     var = "oceFWflx"
-    #create_ensemble_average(experiment, var, option="total", ensemble_members=range(1, 10))
+    #create_ensemble_variable(experiment, var, option="total", ensemble_members=range(1, 10))
     calc_trend(experiment, var)

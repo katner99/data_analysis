@@ -188,8 +188,10 @@ def quiver_func(ax, u, v, lat, lon, chunk, key = True):
         lat[0:-1:chunk],
         u[0:-1:chunk, 0:-1:chunk],
         v[0:-1:chunk, 0:-1:chunk],
-        scale=0.8,
-        width=0.005,
+        scale=1,
+        width=0.008,
+        headwidth=2.5,
+        #headlength=3,
         color="indigo",
     )
     if key:
@@ -211,11 +213,11 @@ def trend_quiver_func(ax, u, v, time, set_up, key = True):
                 slope_v[lat, lon] == 0
                 slope_u[lat, lon] == 0
             if scipy.stats.linregress(u[:, lat, lon], time).pvalue < 0.05 and scipy.stats.linregress(v[:, lat, lon], time).pvalue < 0.05:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='white', scale = 10, width=0.008)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='white', edgecolor='k', linewidth = 1, scale = 10, width=0.008)
             elif scipy.stats.linregress(u[:, lat, lon], time).pvalue < 0.05 or scipy.stats.linregress(v[:, lat, lon], time).pvalue < 0.05:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='grey', scale = 10, width=0.008)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon], slope_u[lat, lon], slope_v[lat, lon], color='grey', edgecolor='k', linewidth = 1, scale = 10, width=0.008)
             else:
-                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon],slope_u[lat, lon], slope_v[lat, lon], color='grey', scale = 10, width=0.003)
+                q = ax.quiver(set_up["X"][lat, lon], set_up["Y"][lat, lon],slope_u[lat, lon], slope_v[lat, lon], color='black', edgecolor='k', linewidth = 1, scale = 10, width=0.001)
     print(np.nanmax(slope_v), np.nanmin(slope_v))
     if key:
         ax.quiverkey(q, 0.938, 0.495, 2, r'$2 \frac{m/s}{cent.}$', color='k', labelpos='E', coordinates='figure')

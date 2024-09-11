@@ -1,12 +1,10 @@
 from config_options import config_comparison
-import matplotlib
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import numpy as np
-from plots import zoom_shelf, pretty_labels
-from plots import read_mask
-from plots_2d import contour_func
-from directories_and_paths import output_path, grid_filepath
+from tools.plots import zoom_shelf, pretty_labels
+from tools.plots import read_mask
+from tools.plots_2d import contour_func
+from tools.directories_and_paths import output_path, grid_filepath
 from mitgcm_python.grid import Grid
 
 import sys
@@ -30,7 +28,7 @@ def main():
     var = "mean"             # either set to the parameter you will be using or set to mean or trend (tells it where to read the values in)
     save = True              # save figure
     show = False             # print the figure on script completion
-    year = 2085
+    year = 2090
 
     filepaths_SIheff = read_data("mean", "SIheff")
     filepaths_SIarea = read_data("mean", "SIarea")
@@ -63,11 +61,11 @@ def main():
 
     set_up_data = xr.open_dataset(f"{output_path}average_CTRL_1920-1950.nc", decode_times=False)
     set_up = read_mask(set_up_data)
-    [data_SIheff, graph_params, graph_params_seaice] = config_comparison(var, input_data_SIheff, grid, var_name = "SIheff", year = year)
-    [data_SIarea, graph_params, graph_params_seaice] = config_comparison(var, input_data_SIarea, grid, var_name = "SIarea", year = year)
-    [data_oceFWflx, graph_params, graph_params_fw] = config_comparison(var, input_data_oceFWflx, grid, var_name = "oceFWflx", year = year)
-    [data_SIfwmelt, graph_params, graph_params_fw] = config_comparison(var, input_data_SIfwmelt, grid, var_name = "SIfwmelt", year = year)
-    [data_SIfwfrz, graph_params, graph_params_fw] = config_comparison(var, input_data_SIfwfrz, grid, var_name = "SIfwfrz", year = year)
+    [data_SIheff, graph_params_seaice, _] = config_comparison("SIheff", input_data_SIheff, loc="mean", year = year)
+    [data_SIarea, graph_params_seaice, _] = config_comparison("SIarea", input_data_SIarea, loc="mean", year = year)
+    [data_oceFWflx, graph_params_fw, _] = config_comparison("oceFWflx", input_data_oceFWflx, loc="mean", year = year)
+    [data_SIfwmelt, graph_params_fw, _] = config_comparison("SIfwmelt", input_data_SIfwmelt, loc="mean", year = year)
+    [data_SIfwfrz, graph_params_fw, _] = config_comparison("SIfwfrz", input_data_SIfwfrz, loc="mean", year = year)
     
     fig, axs = plt.subplots(nrows=3, ncols=5, gridspec_kw={"hspace": 0.05, "wspace": 0.04}, figsize=(18, 10))
     
@@ -113,6 +111,7 @@ def main():
     # save figure
     if save == True:
         fig.savefig(file_out, bbox_inches='tight')
+        print(file_out)
 
     # show figure
     if show == True:
@@ -155,11 +154,11 @@ def sea_ice_total():
 
     set_up_data = xr.open_dataset(f"{output_path}average_CTRL_1920-1950.nc", decode_times=False)
     set_up = read_mask(set_up_data)
-    [data_SIheff, graph_params_seaice, graph_params] = config_comparison(var, input_data_SIheff, grid, var_name = "SIheff", year = year)
-    [data_SIarea, graph_params_seaice, graph_params] = config_comparison(var, input_data_SIarea, grid, var_name = "SIarea", year = year)
-    [data_oceFWflx, graph_params_fw, graph_params] = config_comparison(var, input_data_oceFWflx, grid, var_name = "oceFWflx", year = year)
-    [data_SIfwmelt, graph_params_fw, graph_params] = config_comparison(var, input_data_SIfwmelt, grid, var_name = "SIfwmelt", year = year)
-    [data_SIfwfrz, graph_params_fw, graph_params] = config_comparison(var, input_data_SIfwfrz, grid, var_name = "SIfwfrz", year = year)
+    [data_SIheff, graph_params_seaice, _] = config_comparison("SIheff", input_data_SIheff, loc="mean", year = year)
+    [data_SIarea, graph_params_seaice, _] = config_comparison("SIarea", input_data_SIarea, loc="mean", year = year)
+    [data_oceFWflx, graph_params_fw, _] = config_comparison("oceFWflx", input_data_oceFWflx, loc="mean", year = year)
+    [data_SIfwmelt, graph_params_fw, _] = config_comparison("SIfwmelt", input_data_SIfwmelt, loc="mean", year = year)
+    [data_SIfwfrz, graph_params_fw, _] = config_comparison("SIfwfrz", input_data_SIfwfrz, loc="mean", year = year)
     
     fig, axs = plt.subplots(nrows=4, ncols=5, gridspec_kw={"hspace": 0.05, "wspace": 0.04}, figsize=(18, 10))
     
